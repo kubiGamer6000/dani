@@ -1,2 +1,29 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import { Button } from "$lib/components/ui/button/index";
+</script>
+
+<main>
+  <h1>Home</h1>
+  <Button
+    on:click={() => {
+      goto("/settings");
+    }}
+  >
+    Settings
+  </Button>
+  <Button
+    on:click={() => {
+      goto("/admin/staff");
+    }}
+  >
+    Admin
+  </Button>
+  <Button
+    on:click={() => {
+      goto("/staff/shifts");
+    }}
+  >
+    Staff
+  </Button>
+</main>
