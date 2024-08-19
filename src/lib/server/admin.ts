@@ -7,14 +7,12 @@ import {
 } from "$env/static/private";
 import pkg from "firebase-admin";
 
-const { privateKey } = JSON.parse(FB_PRIVATE_KEY);
-
 try {
   pkg.initializeApp({
     credential: pkg.credential.cert({
       projectId: FB_PROJECT_ID,
       clientEmail: FB_CLIENT_EMAIL,
-      privateKey: privateKey,
+      privateKey: FB_PRIVATE_KEY.replace(/\\n/g, "\n"),
     }),
   });
 } catch (err: any) {
