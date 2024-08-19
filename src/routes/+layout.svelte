@@ -115,7 +115,5 @@
 <ModeWatcher />
 
 <FirebaseApp {auth} firestore={db}>
-  <AuthCheck>
-    <slot />
-  </AuthCheck>
+  <slot />
 </FirebaseApp>
