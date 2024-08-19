@@ -134,6 +134,9 @@
             </form>
           {/if}
         {/if}
+        <Button class="w-full" variant="outline" on:click={subscribeUser}
+          >subscribeUser</Button
+        >
       </Card.Content>
       <Card.Footer>
         <Button class="w-full" on:click={() => goto("/")}>Go To Home</Button>
