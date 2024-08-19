@@ -5,6 +5,8 @@
   import { FirebaseApp } from "sveltefire";
   import { user } from "$lib/firebase";
 
+  import AuthCheck from "$lib/components/auth/AuthCheck.svelte";
+
   import { onMount } from "svelte";
 
   async function detectSWUpdate() {
@@ -113,5 +115,7 @@
 <ModeWatcher />
 
 <FirebaseApp {auth} firestore={db}>
-  <slot />
+  <AuthCheck>
+    <slot />
+  </AuthCheck>
 </FirebaseApp>

@@ -5,7 +5,7 @@ import type { RequestHandler } from "./$types";
 export const POST: RequestHandler = async ({ request, cookies }) => {
   const { idToken } = await request.json();
 
-  const expiresIn = 60 * 60 * 24 * 31 * 1000; // 31 days
+  const expiresIn = 60 * 60 * 24 * 13 * 1000; // 31 days
 
   const decodedIdToken = await adminAuth.verifyIdToken(idToken);
 
