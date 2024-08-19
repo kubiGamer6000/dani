@@ -26,4 +26,18 @@
   >
     Staff
   </Button>
+  <Button
+    on:click={() => {
+      goto("/login");
+    }}
+  >
+    Login
+  </Button>
+  <Button
+    on:click={() => {
+      goto("/signup");
+    }}
+  >
+    SignUP
+  </Button>
 </main>
