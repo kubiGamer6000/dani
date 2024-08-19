@@ -15,7 +15,8 @@ Thumbs.db
 .env.*
 !.env.example
 !.env.test
-service_account.json
+service-account.json
+bfg-1.14.0.jar
 
 
 # Vite
