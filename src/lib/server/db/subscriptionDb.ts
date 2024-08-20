@@ -1,11 +1,13 @@
 import { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } from "$env/static/private";
 import { db } from "$lib/firebase";
+
 import {
   collection,
   doc,
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   arrayUnion,
   query,
   where,
@@ -15,11 +17,40 @@ import {
 } from "firebase/firestore";
 import webpush, { type PushSubscription } from "web-push";
 
+import type { UserDevice } from "$lib/types/userDevices";
+
 initWebPush();
+
+async function mapUserDevicesWithIds(
+  userId: string
+): Promise<UserDeviceWithId[]> {
+  const userDevicesCollection = query(
+    collection(db, "userDevices"),
+    where("userId", "==", userId)
+  );
+
+  const userDevicesSnapshot = await getDocs(userDevicesCollection);
+  console.log(
+    "[mapUserDevicesWithIds()] successfully got user devices from query. "
+  );
+
+  const userDevicesWithId: UserDeviceWithId[] = userDevicesSnapshot.docs.map(
+    (doc, i) => {
+      const data = doc.data() as UserDevice;
+      console.log("[mapUserDevicesWithIds()] Device (" + i + ") data: ", data);
+      return {
+        ...data,
+        deviceId: doc.id,
+      };
+    }
+  );
+
+  return userDevicesWithId;
+}
 
 function initWebPush() {
   webpush.setVapidDetails(
-    "mailto:webpush@hartenfeller.dev",
+    "mailto:info@contentcurrency.ai",
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY
   );
@@ -30,14 +61,19 @@ async function sendNotification(
   payload: string
 ) {
   try {
+    console.log(
+      "[sendNotification()] Sending notification with webpush. Subscription: ",
+      subscription
+    );
     const res = await webpush.sendNotification(subscription, payload);
+    console.log("[sendNotification()] Notification sent. Response: ", res);
     return {
       ok: res.statusCode === 201,
       status: res.statusCode,
       body: res.body,
     };
   } catch (err) {
-    const msg = `Could not send notification: ${err}`;
+    const msg = `[sendNotification()] Could not send notification: ${err}`;
     console.error(msg);
     return {
       ok: false,
@@ -47,43 +83,48 @@ async function sendNotification(
   }
 }
 
-async function deleteIfExpired(username: string, deviceId: string) {
-  const userRef = doc(db, "users", username);
-  const userDoc = await getDoc(userRef);
-
-  if (userDoc.exists()) {
-    const userData = userDoc.data();
-    const userDevices = userData.userDevices || [];
-    const updatedDevices = userDevices.filter(
-      (device: any) => device.deviceId !== deviceId
-    );
-
-    await updateDoc(userRef, { userDevices: updatedDevices });
+async function deleteIfExpired(deviceId: string) {
+  try {
+    const deviceRef = doc(db, "userDevices", deviceId);
+    await deleteDoc(deviceRef);
+    console.log("[deleteIfExpired()] Deleted device: ", deviceId);
+  } catch (err: any) {
+    console.log(`[deleteIfExpired()] Could not delete device: ${err}`);
   }
 }
 
 async function sendNotificationToDevices(
-  devices: SubDevice[],
+  devices: UserDeviceWithId[],
   payload: string
 ) {
   for (const device of devices) {
-    const subscription = JSON.parse(device.subscription);
+    console.log(
+      "[sendNotificationToDevices()] Sending notification to device ",
+      device.deviceId
+    );
+    const subscription = device.subscription;
     const res = await sendNotification(subscription, payload);
 
     if (!res.ok) {
       console.error(
-        `Failed to send notification to device ${device.deviceId}: ${
-          res.body
-        } (${res.status}).
+        `[sendNotificationToDevices()] Failed to send notification to device ${
+          device.deviceId
+        }: ${res.body} (${res.status}).
 ${JSON.stringify(res)}`
       );
     }
 
     // Log notification
+    if (!res.status) {
+      console.log(
+        "[sendNotificationToDevices()] Response status is undefined. Aborting..."
+      );
+      return;
+    }
     await addDoc(collection(db, "notif_log"), {
       device_id: device.deviceId,
       payload,
-      http_status_response: res.status,
+      http_status_response: res?.status,
       success: res.ok,
       error_message: res.body,
       created_at: Timestamp.now(),
@@ -91,7 +132,11 @@ ${JSON.stringify(res)}`
 
     // Remove expired subscription
     if (res.status === 410) {
-      await deleteIfExpired(device.username, device.deviceId);
+      console.log(
+        "[sendNotificationToDevices()] Subscription expired for device [res 410]. Deleting...: ",
+        device.deviceId
+      );
+      await deleteIfExpired(device.deviceId);
     } else if (!res.ok) {
       // Check last 3 notifications and delete if all failed
       const q = query(
@@ -101,37 +146,45 @@ ${JSON.stringify(res)}`
       );
       const querySnapshot = await getDocs(q);
       if (querySnapshot.size >= 3) {
-        await deleteIfExpired(device.username, device.deviceId);
+        console.log(
+          "[sendNotificationToDevices()] Cleanup! Last 3 notifications failed so deleting device: ",
+          device.deviceId
+        );
+        await deleteIfExpired(device.deviceId);
       }
     }
   }
 }
 
 export async function addUserDevice(
-  username: string,
+  userId: string,
   subscription: PushSubscription
 ) {
-  const userRef = doc(db, "users", username);
-  const userDoc = await getDoc(userRef);
+  console.log("[addUserDevice()] Adding device for user: ", userId);
 
-  if (!userDoc.exists()) {
-    await setDoc(userRef, {
-      username,
-      createdAt: Timestamp.now(),
-      userDevices: [],
-    });
+  const devicesRef = collection(db, "userDevices");
+
+  const q = query(devicesRef, where("endpoint", "==", subscription.endpoint));
+
+  const sameDevice = await getDocs(q);
+
+  if (sameDevice.docs.length != 0) {
+    console.log(
+      "[addUserDevice()] Device with same subscription already exists. Aborting.. "
+    );
+    return;
   }
 
-  const deviceId = Math.random().toString(36).substring(2, 15);
-  await updateDoc(userRef, {
-    userDevices: arrayUnion({
-      deviceId,
-      subscription: JSON.stringify(subscription),
-    }),
-  });
+  const deviceData: UserDevice = {
+    endpoint: subscription.endpoint,
+    subscription: subscription,
+    userId,
+  };
+
+  await addDoc(devicesRef, deviceData);
 }
 
-export async function addUserToChannel(username: string, channelId: string) {
+export async function addUserToChannel(userId: string, channelId: string) {
   const channelRef = doc(db, "notif_channels", channelId);
   const channelDoc = await getDoc(channelRef);
 
@@ -139,52 +192,55 @@ export async function addUserToChannel(username: string, channelId: string) {
     await setDoc(channelRef, { createdAt: Timestamp.now(), users: [] });
   }
 
-  await updateDoc(channelRef, { users: arrayUnion(username) });
+  await updateDoc(channelRef, { users: arrayUnion(userId) });
 }
 
-export async function notifUser(username: string, payload: string) {
-  const userRef = doc(db, "users", username);
+export async function notifUser(userId: string, payload: string) {
+  const userRef = doc(db, "users", userId);
   const userDoc = await getDoc(userRef);
 
   if (userDoc.exists()) {
-    const userData = userDoc.data();
-    const devices = userData.userDevices.map((device: any) => ({
-      ...device,
-      username,
-    }));
+    const userId = userDoc.id;
+
+    const devices = await mapUserDevicesWithIds(userId);
+
+    console.log(
+      "[notifUser()] Succesfully got user devices. Calling sendNotificationToDevices()"
+    );
+
     await sendNotificationToDevices(devices, payload);
+  } else {
+    console.log("[notifUser()] Called me with invalid user: ", userId);
   }
 }
 
-export async function notifChannel(channelId: string, payload: string) {
-  const channelRef = doc(db, "notif_channels", channelId);
-  const channelDoc = await getDoc(channelRef);
+// export async function notifChannel(channelId: string, payload: string) {
+//   const channelRef = doc(db, "notif_channels", channelId);
+//   const channelDoc = await getDoc(channelRef);
 
-  if (channelDoc.exists()) {
-    const channelData = channelDoc.data();
-    const users = channelData.users || [];
+//   if (channelDoc.exists()) {
+//     const channelData = channelDoc.data();
+//     const users = channelData.users || [];
 
-    const devices: SubDevice[] = [];
-    for (const username of users) {
-      const userRef = doc(db, "users", username);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        devices.push(
-          ...userData.userDevices.map((device: any) => ({
-            ...device,
-            username,
-          }))
-        );
-      }
-    }
+//     const devices: SubDevice[] = [];
+//     for (const username of users) {
+//       const userRef = doc(db, "users", username);
+//       const userDoc = await getDoc(userRef);
+//       if (userDoc.exists()) {
+//         const userData = userDoc.data();
+//         devices.push(
+//           ...userData.userDevices.map((device: any) => ({
+//             ...device,
+//             username,
+//           }))
+//         );
+//       }
+//     }
 
-    await sendNotificationToDevices(devices, payload);
-  }
-}
+//     await sendNotificationToDevices(devices, payload);
+//   }
+// }
 
-type SubDevice = {
+interface UserDeviceWithId extends UserDevice {
   deviceId: string;
-  subscription: string;
-  username: string;
-};
+}

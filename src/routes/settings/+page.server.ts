@@ -3,13 +3,15 @@ import { error, type Actions } from "@sveltejs/kit";
 
 export const actions: Actions = {
   testNotification: async ({ locals }) => {
-    const username = locals.uid;
+    const userId = locals.uid;
 
-    if (!username) {
+    if (!userId) {
       throw error(400, "Unauthorized");
     }
 
-    notifUser(username, "This is a test notification");
+    console.log("Calling notifUser(", userId, ")");
+
+    await notifUser(userId, "This is a test notification");
 
     return { status: "success" };
   },

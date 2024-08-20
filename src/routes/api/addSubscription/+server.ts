@@ -1,25 +1,34 @@
 import { addUserDevice } from "$lib/server/db/subscriptionDb";
+import type { UserDevice } from "$lib/types/userDevices";
 
 import { error, json, type RequestHandler } from "@sveltejs/kit";
 
 export const POST = (async ({ locals, request }) => {
-  const username = locals.uid;
+  const userId = locals.uid;
 
-  console.log("UserID recieved in addSubscription: ", username);
+  console.log("UserID recieved in addSubscription: ", userId);
 
-  if (!username) {
-    console.log("No username passed to addSubscription");
+  if (!userId) {
+    console.log(
+      "[addSubscription/+server.ts] No userId in locals. Is user signed in?"
+    );
     throw error(401, "Unauthorized");
   }
 
   const data = await request.json();
 
   if (!data.subscription) {
-    console.log("No subscription passed to addSubscription", data);
+    console.log("[addSubscription/+server.ts] ", data);
     throw error(400, "Bad Request");
   }
 
-  addUserDevice(username, data.subscription);
+  console.log(
+    "[addSubscription/+server.ts] Calling addUserDevice with user's (",
+    userId,
+    ") device: ",
+    data.subscription
+  );
+  await addUserDevice(userId, data.subscription);
 
   return json({ success: true });
 }) satisfies RequestHandler;

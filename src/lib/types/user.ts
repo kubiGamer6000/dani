@@ -7,10 +7,4 @@ export interface UserData {
   isCheckedIn: boolean;
   lastCheckIn: string;
   lastCheckInTimestamp: Timestamp;
-  userDevices: [
-    {
-      deviceId: string;
-      subscription: string;
-    }
-  ];
 }
