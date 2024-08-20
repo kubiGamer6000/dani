@@ -15,6 +15,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
+  import type { UserData } from "$lib/types/user";
 
   let firstName = "";
   let lastName = "";
@@ -84,13 +85,17 @@
 
   async function confirmUser(withGoogle: boolean) {
     const batch = writeBatch(db);
-    batch.set(doc(db, "users", $user!.uid), {
+
+    const newUser = {
       email: withGoogle ? $user!.email : email,
       name: withGoogle ? $user!.displayName : `${firstName} ${lastName}`,
       role: "staff",
       isCheckedIn: false,
       lastCheckIn: null,
-    });
+      lastCheckInTimestamp: null,
+    };
+
+    batch.set(doc(db, "users", $user!.uid), newUser);
     await batch.commit();
   }
 </script>

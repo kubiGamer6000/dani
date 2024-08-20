@@ -3,7 +3,6 @@
   import { Skeleton } from "$lib/components/ui/skeleton";
   import * as Table from "$lib/components/ui/table";
   import { Button } from "$lib/components/ui/button/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
 
   import { collection, where, query, orderBy, limit } from "firebase/firestore";
 
@@ -14,11 +13,6 @@
   import dayjs from "dayjs";
   import calendar from "dayjs/plugin/calendar";
   dayjs.extend(calendar);
-
-  import Search from "lucide-svelte/icons/search";
-
-  import type { UserData } from "$lib/types/user";
-  import type { CheckIn } from "$lib/types/checkIn";
 
   import CheckInTimer from "$lib/components/custom/CheckInTimer.svelte";
 
@@ -90,8 +84,6 @@
           </Card.Description>
         </Card.Header>
         <Card.Content>
-          <h3 class="font-semibold mt-4 mb-2">Shifts</h3>
-
           <Collection
             ref={query(
               collection(db, "shifts"),
@@ -101,81 +93,88 @@
             )}
             let:data={shifts}
           >
-            {#each shifts as shift}
-              <div class="py-2">
-                <h2 class="font-semibold text-lg">
-                  {dayjs(shift.date).calendar(null, {
-                    sameDay: "[Today]", // The same day ( Today at 2:30 AM )
-                    lastDay: "[Yesterday]", // The day before ( Yesterday at 2:30 AM )
-                    lastWeek: "[Last] dddd", // Last week ( Last Monday at 2:30 AM )
-                    sameElse: "DD/MM/YYYY", // Everything else ( 7/10/2011 )
-                  })}
-                </h2>
-                <Table.Root class="my-4">
-                  <Table.Header>
-                    <Table.Row>
-                      <Table.Head class="w-[100px]">Activity</Table.Head>
-                      <Table.Head>When</Table.Head>
-                      <Table.Head class="text-right">Where</Table.Head>
-                    </Table.Row>
-                  </Table.Header>
+            {#if shifts.length !== 0}
+              {#each shifts as shift}
+                <h3 class="font-semibold text-lg mt-4 mb-2">Shifts</h3>
+                <div class="py-2">
+                  <h2 class="font-semibold text-lg">
+                    {dayjs(shift.date).calendar(null, {
+                      sameDay: "[Today]", // The same day ( Today at 2:30 AM )
+                      lastDay: "[Yesterday]", // The day before ( Yesterday at 2:30 AM )
+                      lastWeek: "[Last] dddd", // Last week ( Last Monday at 2:30 AM )
+                      sameElse: "DD/MM/YYYY", // Everything else ( 7/10/2011 )
+                    })}
+                  </h2>
+                  <Table.Root class="my-4">
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.Head class="w-[100px]">Activity</Table.Head>
+                        <Table.Head>When</Table.Head>
+                        <Table.Head class="text-right">Where</Table.Head>
+                      </Table.Row>
+                    </Table.Header>
 
-                  {#each shift?.checkIns as checkIn}
-                    <Table.Row>
-                      <Table.Cell class="font-medium flex items-center">
-                        Checked in
-                      </Table.Cell>
-                      <Table.Cell>
-                        {dayjs(checkIn.in.time.toDate()).format("H:mm")}
-                      </Table.Cell>
-                      <Table.Cell class="text-right">
-                        <Doc
-                          ref={`checkIns/${checkIn.in.id}`}
-                          let:data={checkInData}
-                        >
-                          <Button
-                            variant="outline"
-                            on:click={() => {
-                              openGoogleMapsLink(checkInData);
-                            }}
+                    {#each shift?.checkIns as checkIn}
+                      <Table.Row>
+                        <Table.Cell class="font-medium flex items-center">
+                          Checked in
+                        </Table.Cell>
+                        <Table.Cell>
+                          {dayjs(checkIn.in.time.toDate()).format("H:mm")}
+                        </Table.Cell>
+                        <Table.Cell class="text-right">
+                          <Doc
+                            ref={`checkIns/${checkIn.in.id}`}
+                            let:data={checkInData}
                           >
-                            <Map class="mr-2 h-4 w-4" />
-                            Open
-                          </Button>
-                        </Doc>
-                      </Table.Cell>
-                    </Table.Row>
+                            <Button
+                              variant="outline"
+                              on:click={() => {
+                                openGoogleMapsLink(checkInData);
+                              }}
+                            >
+                              <Map class="mr-2 h-4 w-4" />
+                              Open
+                            </Button>
+                          </Doc>
+                        </Table.Cell>
+                      </Table.Row>
 
-                    <Table.Row>
-                      <Table.Cell class="font-medium text-md flex items-center">
-                        Checked out
-                      </Table.Cell>
-                      <Table.Cell>
-                        {checkIn.out.time != null
-                          ? dayjs(checkIn.out.time.toDate()).format("H:mm")
-                          : "Ongoing"}
-                      </Table.Cell>
-                      <Table.Cell class="text-right">
-                        <Doc
-                          ref={`checkIns/${checkIn.out.id}`}
-                          let:data={checkInData}
+                      <Table.Row>
+                        <Table.Cell
+                          class="font-medium text-md flex items-center"
                         >
-                          <Button
-                            variant="outline"
-                            on:click={() => {
-                              openGoogleMapsLink(checkInData);
-                            }}
+                          Checked out
+                        </Table.Cell>
+                        <Table.Cell>
+                          {checkIn.out.time != null
+                            ? dayjs(checkIn.out.time.toDate()).format("H:mm")
+                            : "Ongoing"}
+                        </Table.Cell>
+                        <Table.Cell class="text-right">
+                          <Doc
+                            ref={`checkIns/${checkIn.out.id}`}
+                            let:data={checkInData}
                           >
-                            <Map class="mr-2 h-4 w-4" />
-                            Open
-                          </Button>
-                        </Doc>
-                      </Table.Cell>
-                    </Table.Row>
-                  {/each}
-                </Table.Root>
-              </div>
-            {/each}
+                            <Button
+                              variant="outline"
+                              on:click={() => {
+                                openGoogleMapsLink(checkInData);
+                              }}
+                            >
+                              <Map class="mr-2 h-4 w-4" />
+                              Open
+                            </Button>
+                          </Doc>
+                        </Table.Cell>
+                      </Table.Row>
+                    {/each}
+                  </Table.Root>
+                </div>
+              {/each}
+            {:else}
+              <h3 class="font-semibold text-lg mt-4 mb-2">No shifts found</h3>
+            {/if}
           </Collection>
         </Card.Content>
         <Card.Footer>

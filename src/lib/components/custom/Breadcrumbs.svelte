@@ -27,13 +27,15 @@
       {#each crumbs as c, i}
         {#if i == crumbs.length - 1}
           <Breadcrumb.Item>
-            <Breadcrumb.Page>{c.label}</Breadcrumb.Page>
+            <Breadcrumb.Page class="text-lg">{c.label}</Breadcrumb.Page>
           </Breadcrumb.Item>
         {:else}
           <Breadcrumb.Item>
-            <Breadcrumb.Link href={c.href}>{c.label}</Breadcrumb.Link>
+            <Breadcrumb.Link class="text-lg" href={c.href}
+              >{c.label}</Breadcrumb.Link
+            >
           </Breadcrumb.Item>
-          <Breadcrumb.Separator />
+          <Breadcrumb.Separator class="" />
         {/if}
       {/each}
     </Breadcrumb.List>

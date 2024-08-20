@@ -1,38 +1,29 @@
 <script lang="ts">
   import { page } from "$app/stores";
 
-  import Home from "lucide-svelte/icons/house";
-  import CalendarCheck from "lucide-svelte/icons/calendar-check";
-  import Menu from "lucide-svelte/icons/menu";
-  import Users from "lucide-svelte/icons/users";
+  import { toggleMode } from "mode-watcher";
   import Sun from "lucide-svelte/icons/sun";
   import Moon from "lucide-svelte/icons/moon";
-  import { Input } from "$lib/components/ui/input/index.js";
 
-  import AuthCheck from "$lib/components/auth/AuthCheck.svelte";
-  import Search from "lucide-svelte/icons/search";
-
-  import { Badge } from "$lib/components/ui/badge/index.ts";
-  import { toggleMode } from "mode-watcher";
   import { Button } from "$lib/components/ui/button/index.ts";
-  import * as Sheet from "$lib/components/ui/sheet/index.ts";
+
+  import Breadcrumbs from "$lib/components/custom/Breadcrumbs.svelte";
 </script>
 
-<AuthCheck>
-  <div class="flex min-h-screen w-full flex-col">
-    <header
-      class="bg-background sticky top-0 flex h-16 items-center gap-4 border-b px-4 md:px-6"
+<div class="flex min-h-screen w-full flex-col">
+  <header
+    class="bg-background sticky top-0 flex h-16 items-center gap-4 border-b px-4 md:px-6"
+  >
+    <nav
+      class="  gap-6 text-lg font-medium flex flex-row w-full justify-between items-center"
     >
-      <nav
-        class="  gap-6 text-lg font-medium flex flex-row w-full justify-between items-center"
+      <a
+        href="/"
+        class="text-foreground font-semibold text-2xl w-56 hover:text-foreground transition-colors"
       >
-        <a
-          href="/"
-          class="text-foreground font-semibold text-2xl w-56 hover:text-foreground transition-colors"
-        >
-          🍆 Dani's Catering
-        </a>
-        <!-- <a
+        🍆 Dani's Catering
+      </a>
+      <!-- <a
           href="##"
           class="text-foreground hover:text-foreground transition-colors"
         >
@@ -62,17 +53,20 @@
         >
           Analytics
         </a> -->
-        <Button on:click={toggleMode} variant="outline" size="icon">
-          <Sun
-            class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-          />
-          <Moon
-            class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-          />
-          <span class="sr-only">Toggle theme</span>
-        </Button>
-      </nav>
-    </header>
+      <Button on:click={toggleMode} variant="outline" size="icon">
+        <Sun
+          class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+        />
+        <Moon
+          class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+        />
+        <span class="sr-only">Toggle theme</span>
+      </Button>
+    </nav>
+  </header>
+  <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 h-screen">
+    <Breadcrumbs path={$page.url.pathname} />
+
     <slot />
-  </div>
-</AuthCheck>
+  </main>
+</div>

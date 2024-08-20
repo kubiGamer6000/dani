@@ -11,7 +11,6 @@
 
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
 </script>
 
 <Card.Root class="mx-auto w-full">

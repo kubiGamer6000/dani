@@ -19,6 +19,8 @@ import webpush, { type PushSubscription } from "web-push";
 
 import type { UserDevice } from "$lib/types/userDevices";
 
+import type { NotificationPayload } from "$lib/types/notifPayload";
+
 initWebPush();
 
 async function mapUserDevicesWithIds(
@@ -58,14 +60,17 @@ function initWebPush() {
 
 async function sendNotification(
   subscription: PushSubscription,
-  payload: string
+  payload: NotificationPayload
 ) {
   try {
     console.log(
       "[sendNotification()] Sending notification with webpush. Subscription: ",
       subscription
     );
-    const res = await webpush.sendNotification(subscription, payload);
+    const res = await webpush.sendNotification(
+      subscription,
+      notifPayloadToString(payload)
+    );
     console.log("[sendNotification()] Notification sent. Response: ", res);
     return {
       ok: res.statusCode === 201,
@@ -95,7 +100,7 @@ async function deleteIfExpired(deviceId: string) {
 
 async function sendNotificationToDevices(
   devices: UserDeviceWithId[],
-  payload: string
+  payload: NotificationPayload
 ) {
   for (const device of devices) {
     console.log(
@@ -195,7 +200,7 @@ export async function addUserToChannel(userId: string, channelId: string) {
   await updateDoc(channelRef, { users: arrayUnion(userId) });
 }
 
-export async function notifUser(userId: string, payload: string) {
+export async function notifUser(userId: string, payload: NotificationPayload) {
   const userRef = doc(db, "users", userId);
   const userDoc = await getDoc(userRef);
 
@@ -243,4 +248,15 @@ export async function notifUser(userId: string, payload: string) {
 
 interface UserDeviceWithId extends UserDevice {
   deviceId: string;
+}
+
+function notifPayloadToString(input: { title: string; body: string }): string {
+  const separator = "##";
+  const defaultTitle = "Dani's Catering";
+
+  if (input.title && input.title !== defaultTitle) {
+    return `${input.title.trim()} ${separator} ${input.body.trim()}`;
+  } else {
+    return input.body.trim();
+  }
 }

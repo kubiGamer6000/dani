@@ -8,7 +8,7 @@
   import Sun from "lucide-svelte/icons/sun";
   import Moon from "lucide-svelte/icons/moon";
 
-  import AuthCheck from "$lib/components/auth/AuthCheck.svelte";
+  import Breadcrumbs from "$lib/components/custom/Breadcrumbs.svelte";
 
   import { Badge } from "$lib/components/ui/badge/index.ts";
   import { toggleMode } from "mode-watcher";
@@ -16,117 +16,100 @@
   import * as Sheet from "$lib/components/ui/sheet/index.ts";
 </script>
 
-<AuthCheck>
-  <div
-    class="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
-  >
-    <div class="bg-muted/40 hidden border-r md:block">
-      <div class="flex h-full max-h-screen flex-col gap-2">
-        <div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-          <a href="/" class="flex items-center gap-2 font-semibold">
-            <!-- <Package2 class="h-6 w-6" /> -->
-            <h1>🍆</h1>
-            <span class="">Dani's Catering</span>
+<div
+  class="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
+>
+  <div class="bg-muted/40 hidden border-r md:block">
+    <div class="flex h-full max-h-screen flex-col gap-2">
+      <div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+        <a href="/" class="flex items-center gap-2 font-semibold">
+          <!-- <Package2 class="h-6 w-6" /> -->
+          <h1>🍆</h1>
+          <span class="">Dani's Catering</span>
+        </a>
+      </div>
+      <div class="flex-1">
+        <nav class="grid items-start px-2 text-sm font-medium lg:px-4">
+          <a
+            href="/admin"
+            class={`${$page.route.id === "/admin" ? "bg-muted text-primary" : "text-muted-foreground"} hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all`}
+          >
+            <Home class="h-4 w-4" />
+            Dashboard
           </a>
-        </div>
-        <div class="flex-1">
-          <nav class="grid items-start px-2 text-sm font-medium lg:px-4">
-            <a
-              href="/"
-              class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+          <a
+            href="/admin/events"
+            class={`${$page.route.id?.includes("events") ? "bg-muted text-primary" : "text-muted-foreground"} hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all`}
+          >
+            <CalendarCheck class="h-4 w-4" />
+            Events
+            <Badge
+              class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
             >
-              <Home class="h-4 w-4" />
+              7
+            </Badge>
+          </a>
+          <a
+            href="/admin/staff"
+            class={`${$page.route.id?.includes("staff") ? "bg-muted text-primary" : "text-muted-foreground"} hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all`}
+          >
+            <Users class="h-4 w-4" />
+            Staff
+          </a>
+        </nav>
+      </div>
+    </div>
+  </div>
+  <div class="flex flex-col">
+    <header
+      class="bg-muted/40 flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 justify-between"
+    >
+      <Sheet.Root>
+        <Sheet.Trigger>
+          <Button variant="outline" size="icon" class="shrink-0 md:hidden">
+            <Menu class="h-5 w-5" />
+            <span class="sr-only">Toggle navigation menu</span>
+          </Button>
+        </Sheet.Trigger>
+        <Sheet.Content side="left" class="flex flex-col">
+          <nav class="grid gap-2 text-lg font-medium">
+            <a
+              href="/admin"
+              class="flex items-center gap-2 text-lg font-semibold"
+            >
+              <h1>🍆</h1>
+              <span class="sr-only">Dani's Catering</span>
+            </a>
+            <a
+              href="/admin"
+              class={`${$page.route.id === "/admin" ? "bg-muted text-foreground" : "bg-background text-muted-foreground"} hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2`}
+            >
+              <Home class="h-5 w-5" />
               Dashboard
             </a>
             <a
-              href="##"
-              class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+              href="/admin/events"
+              class={`${$page.route.id?.includes("events") ? "bg-muted text-foreground" : "bg-background text-muted-foreground"} hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2`}
             >
-              <CalendarCheck class="h-4 w-4" />
+              <CalendarCheck class="h-5 w-5" />
               Events
               <Badge
                 class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
               >
-                7
+                6
               </Badge>
             </a>
             <a
-              href="##"
-              class="text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all"
+              href="/admin/staff"
+              class={`${$page.route.id?.includes("staff") ? "bg-muted text-foreground" : "bg-background text-muted-foreground"} hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2`}
             >
-              <Users class="h-4 w-4" />
-              Employees
+              <Users class="h-5 w-5" />
+              Staff
             </a>
           </nav>
-        </div>
-      </div>
-    </div>
-    <div class="flex flex-col">
-      <header
-        class="bg-muted/40 flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 justify-between"
-      >
-        <Sheet.Root>
-          <Sheet.Trigger asChild let:builder>
-            <Button
-              variant="outline"
-              size="icon"
-              class="shrink-0 md:hidden"
-              builders={[builder]}
-            >
-              <Menu class="h-5 w-5" />
-              <span class="sr-only">Toggle navigation menu</span>
-            </Button>
-          </Sheet.Trigger>
-          <Sheet.Content side="left" class="flex flex-col">
-            <nav class="grid gap-2 text-lg font-medium">
-              <a
-                href="/admin/"
-                class="flex items-center gap-2 text-lg font-semibold"
-              >
-                <h1>🍆</h1>
-                <span class="sr-only">Dani's Catering</span>
-              </a>
-              <a
-                href="/admin/"
-                class="hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-                class:bg-muted={$page.route.id === "/admin"}
-                class:text-foreground={$page.route.id === "/admin"}
-                class:text-muted-foreground={$page.route.id != "/admin"}
-              >
-                <Home class="h-5 w-5" />
-                Dashboard
-              </a>
-              <a
-                href="/admin/events"
-                class="hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-                class:bg-muted={$page.route.id?.includes("events")}
-                class:text-foreground={$page.route.id?.includes("events")}
-                class:text-muted-foreground={!$page.route.id?.includes(
-                  "events"
-                )}
-              >
-                <CalendarCheck class="h-5 w-5" />
-                Events
-                <Badge
-                  class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-                >
-                  6
-                </Badge>
-              </a>
-              <a
-                href="/admin/staff"
-                class=" hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"
-                class:bg-muted={$page.route.id?.includes("staff")}
-                class:text-foreground={$page.route.id?.includes("staff")}
-                class:text-muted-foreground={!$page.route.id?.includes("staff")}
-              >
-                <Users class="h-5 w-5" />
-                Staff
-              </a>
-            </nav>
-          </Sheet.Content>
-        </Sheet.Root>
-        <!-- <div class="w-full flex-1">
+        </Sheet.Content>
+      </Sheet.Root>
+      <!-- <div class="w-full flex-1">
         <form>
           <div class="relative">
             <Search
@@ -140,8 +123,8 @@
           </div>
         </form>
       </div> -->
-        <h1 class="font-semibold">Dani's Catering</h1>
-        <!-- <DropdownMenu.Root>
+      <h1 class="font-semibold">Dani's Catering</h1>
+      <!-- <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
           <Button
             builders={[builder]}
@@ -162,18 +145,21 @@
           <DropdownMenu.Item>Logout</DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root> -->
-        <Button on:click={toggleMode} variant="outline" size="icon">
-          <Sun
-            class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-          />
-          <Moon
-            class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-          />
-          <span class="sr-only">Toggle theme</span>
-        </Button>
-      </header>
+      <Button on:click={toggleMode} variant="outline" size="icon">
+        <Sun
+          class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+        />
+        <Moon
+          class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+        />
+        <span class="sr-only">Toggle theme</span>
+      </Button>
+    </header>
 
-      <slot></slot>
-    </div>
+    <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 h-screen">
+      <Breadcrumbs path={$page.url.pathname} />
+
+      <slot />
+    </main>
   </div>
-</AuthCheck>
+</div>

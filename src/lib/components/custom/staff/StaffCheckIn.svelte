@@ -23,6 +23,7 @@
   import { getCurrentPosition } from "$lib/utils/getUserGeolocation";
 
   import type { Shift } from "$lib/types/shift";
+  import { enhance } from "$app/forms";
 
   // Add a loading state
   let isLoading = false;
@@ -214,5 +215,11 @@
         Check {$userData?.isCheckedIn ? "out" : "in"}
       {/if}
     </Button>
+    <form method="POST" action="/staff/shifts" use:enhance>
+      <input type="hidden" name="msg" value={"Hey nigga 🍆"} />
+
+      <button>Send</button>
+      <Button class="w-full" variant="secondary">Send Notification</Button>
+    </form>
   </Card.Footer>
 </Card.Root>

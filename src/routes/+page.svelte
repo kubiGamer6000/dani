@@ -3,8 +3,10 @@
   import { Button } from "$lib/components/ui/button/index";
 </script>
 
-<main>
-  <h1>Home</h1>
+<main
+  class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 h-screen align-center"
+>
+  <h1 class="text-center font-semibold text-2xl">Home</h1>
   <Button
     on:click={() => {
       goto("/settings");
@@ -38,6 +40,6 @@
       goto("/signup");
     }}
   >
-    SignUP
+    Sign up
   </Button>
 </main>
