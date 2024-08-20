@@ -67,10 +67,7 @@ async function sendNotification(
       "[sendNotification()] Sending notification with webpush. Subscription: ",
       subscription
     );
-    const res = await webpush.sendNotification(
-      subscription,
-      notifPayloadToString(payload)
-    );
+    const res = await webpush.sendNotification(subscription, payload.body);
     console.log("[sendNotification()] Notification sent. Response: ", res);
     return {
       ok: res.statusCode === 201,

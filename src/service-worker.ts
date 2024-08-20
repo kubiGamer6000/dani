@@ -77,14 +77,13 @@ self.addEventListener("message", (event) => {
 
 self.addEventListener("push", (event: any) => {
   console.log("PAYLOAD: ", event.data);
-  const payloadData = stringToNotifPayload(event.data.text());
 
   // const payload = event.data?.text() ?? "no payload";
   // const notifTitle = "Dani's Catering";
   const registration = (self as any).registration as ServiceWorkerRegistration;
   event.waitUntil(
-    registration.showNotification(payloadData.title, {
-      body: payloadData.body ?? "no payload",
+    registration.showNotification("Dani's Catering", {
+      body: event.data.text() ?? "no payload",
     })
   );
 });
