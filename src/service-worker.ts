@@ -86,6 +86,8 @@ self.addEventListener("push", (event: any) => {
       body: event.data.text() ?? "no payload",
     })
   );
+
+  console.log("test");
 });
 
 function stringToNotifPayload(input: string): { title: string; body: string } {
