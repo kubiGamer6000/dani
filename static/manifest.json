@@ -4,9 +4,9 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f7f7f7",
-  "theme_color": "#f7f7f7",
-  "description": "Dani's Catering management app.",
+  "background_color": "#e056fd",
+  "theme_color": "#e056fd",
+  "description": "The Dani's Catering app.",
   "orientation": "portrait",
   "icons": [
     {

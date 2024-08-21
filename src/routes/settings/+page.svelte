@@ -25,7 +25,7 @@
   function requestNotificationPermission() {
     Notification.requestPermission().then((permission) => {
       if (permission === "granted") {
-        new Notification("You are now subscribed to notifications!");
+        notifPermGranted = true;
       }
     });
   }
@@ -114,7 +114,7 @@
         {#if notifPermGranted === null}
           <p>Checking permissions...</p>
         {:else if notifPermGranted === false}
-          <Button class="button" on:click={requestNotificationPermission}>
+          <Button class="w-full" on:click={requestNotificationPermission}>
             Enable notifications
           </Button>
         {:else}
@@ -128,19 +128,16 @@
               >Unsubscribe</Button
             >
             <form method="post" action="?/testNotification">
-              <Button class="w-full" type="submit" variant="secondary"
+              <Button class="w-full mt-4" type="submit" variant="secondary"
                 >Test Notification</Button
               >
             </form>
           {/if}
         {/if}
-        <Button class="w-full" variant="outline" on:click={subscribeUser}
-          >subscribeUser</Button
+        <Button class="w-full mt-4" variant="outline" on:click={() => goto("/")}
+          >Go To Home</Button
         >
       </Card.Content>
-      <Card.Footer>
-        <Button class="w-full" on:click={() => goto("/")}>Go To Home</Button>
-      </Card.Footer>
     </Card.Root>
   </div>
 </main>

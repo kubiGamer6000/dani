@@ -2,10 +2,6 @@
   import StaffCheckIn from "$lib/components/custom/staff/StaffCheckIn.svelte";
   import MyCheckIns from "$lib/components/custom/staff/MyCheckIns.svelte";
 
-  import type { PageData } from "./$types";
-
-  export let data: PageData;
-
   /// STAFF CHECK IN LOGIC
 
   import { enhance } from "$app/forms";

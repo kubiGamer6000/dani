@@ -83,7 +83,7 @@ self.addEventListener("push", (event: any) => {
   const registration = (self as any).registration as ServiceWorkerRegistration;
   event.waitUntil(
     registration.showNotification("Dani's Catering", {
-      body: event.data.text() ?? "no payload",
+      body: event.data?.text() ?? "no payload",
     })
   );
 

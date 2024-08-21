@@ -60,14 +60,14 @@ function initWebPush() {
 
 async function sendNotification(
   subscription: PushSubscription,
-  payload: NotificationPayload
+  payload: string
 ) {
   try {
     console.log(
       "[sendNotification()] Sending notification with webpush. Subscription: ",
       subscription
     );
-    const res = await webpush.sendNotification(subscription, payload.body);
+    const res = await webpush.sendNotification(subscription, payload);
     console.log("[sendNotification()] Notification sent. Response: ", res);
     return {
       ok: res.statusCode === 201,
@@ -97,7 +97,7 @@ async function deleteIfExpired(deviceId: string) {
 
 async function sendNotificationToDevices(
   devices: UserDeviceWithId[],
-  payload: NotificationPayload
+  payload: string
 ) {
   for (const device of devices) {
     console.log(
@@ -197,7 +197,7 @@ export async function addUserToChannel(userId: string, channelId: string) {
   await updateDoc(channelRef, { users: arrayUnion(userId) });
 }
 
-export async function notifUser(userId: string, payload: NotificationPayload) {
+export async function notifUser(userId: string, payload: string) {
   const userRef = doc(db, "users", userId);
   const userDoc = await getDoc(userRef);
 

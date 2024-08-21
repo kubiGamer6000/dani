@@ -150,7 +150,7 @@ export const actions = {
       body: `${userDoc.data()?.name} checked ${statusString}`,
     };
 
-    await notifUser("jWHB4eid9vVfmepMPX3XsXHcCJt1", notification);
+    await notifUser("jWHB4eid9vVfmepMPX3XsXHcCJt1", notification.body);
 
     return { status: "success" };
 
