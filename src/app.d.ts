@@ -5,6 +5,7 @@ declare global {
     // interface Error {}
     interface Locals {
       uid?: string | null;
+      role?: "staff" | "admin";
       // role?: string | null;
     }
     // interface PageData {}

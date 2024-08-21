@@ -16,6 +16,7 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import { Label } from "$lib/components/ui/label/index.js";
   import type { UserData } from "$lib/types/user";
+  import { page } from "$app/stores";
 
   let firstName = "";
   let lastName = "";
@@ -48,7 +49,8 @@
       });
       await confirmUser(false);
       errorMessage = "";
-      goto("/staff");
+      const redirectTo = $page.url.searchParams.get("redirectTo") || "/";
+      goto(`/${redirectTo.slice(1)}`);
     } catch (error: any) {
       console.error("Error signing up with email/password:", error);
       errorMessage = error.message;
@@ -74,7 +76,8 @@
       });
       errorMessage = "";
       await confirmUser(true);
-      goto("/staff");
+      const redirectTo = $page.url.searchParams.get("redirectTo") || "/";
+      goto(`/${redirectTo.slice(1)}`);
     } catch (error: any) {
       console.error("Error signing up with Google:", error);
       errorMessage = error.message;

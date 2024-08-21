@@ -3,35 +3,36 @@ import { redirect, type Handle } from "@sveltejs/kit";
 
 export const handle = (async ({ event, resolve }) => {
   const sessionCookie = event.cookies.get("__session");
-  if (sessionCookie) {
-    console.log("[handle() at hooks.server.ts] Found session cookie");
-  }
 
   try {
     const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie!);
     event.locals.uid = decodedClaims.uid;
-
-    console.log(
-      "[handle() at hooks.server.ts] Got userId from cookie: ",
-      decodedClaims.uid
-    );
+    event.locals.role = decodedClaims.role;
   } catch (e) {
-    console.log(
-      "[handle() at hooks.server.ts] no cookie found. Setting userId to null"
-    );
     event.locals.uid = null;
   }
 
+  console.log("Hook function running...");
+
   if (
-    event.url.pathname.startsWith("/admin") ||
-    event.url.pathname.startsWith("/staff")
+    event.url.pathname.startsWith("/staff") ||
+    event.url.pathname.startsWith("/admin")
   ) {
+    console.log("Protected route! Checking auth...");
     if (event.locals.uid === null) {
-      console.log(
-        "[handle() at hooks.server.ts] User not found. Redirecting to /login"
-      );
-      throw redirect(303, "/login");
+      const fromUrl = event.url.pathname + event.url.search;
+      console.log("User is not logged in. Redirecting to login...");
+      throw redirect(302, `/login?redirectTo=${fromUrl}`);
+    }
+
+    if (
+      event.url.pathname.startsWith("/admin") &&
+      event.locals.role !== "admin"
+    ) {
+      console.log("User is not an admin. Redirecting to home...");
+      throw redirect(302, "/");
     }
   }
+
   return resolve(event);
 }) satisfies Handle;

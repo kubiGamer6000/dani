@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { navigating, page } from "$app/stores";
 
   import Home from "lucide-svelte/icons/house";
   import CalendarCheck from "lucide-svelte/icons/calendar-check";
@@ -14,6 +14,10 @@
   import { toggleMode } from "mode-watcher";
   import { Button } from "$lib/components/ui/button/index.ts";
   import * as Sheet from "$lib/components/ui/sheet/index.ts";
+  import AnimatedRoute from "$lib/components/custom/AnimatedRoute.svelte";
+
+  let open = false;
+  $: if ($navigating) open = false;
 </script>
 
 <div
@@ -64,7 +68,7 @@
     <header
       class="bg-muted/40 flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 justify-between"
     >
-      <Sheet.Root>
+      <Sheet.Root bind:open>
         <Sheet.Trigger>
           <Button variant="outline" size="icon" class="shrink-0 md:hidden">
             <Menu class="h-5 w-5" />
@@ -159,7 +163,9 @@
     <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 h-screen">
       <Breadcrumbs path={$page.url.pathname} />
 
-      <slot />
+      <AnimatedRoute>
+        <slot />
+      </AnimatedRoute>
     </main>
   </div>
 </div>

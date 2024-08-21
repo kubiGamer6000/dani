@@ -2,10 +2,10 @@
   import { onMount, onDestroy } from "svelte";
   import { db } from "$lib/firebase";
   import { doc, getDoc } from "firebase/firestore";
-  import type { Timestamp } from "firebase/firestore";
+  import type { DocumentData, Timestamp } from "firebase/firestore";
   import type { UserData } from "$lib/types/user";
 
-  export let userData: UserData | null;
+  export let userData: UserData | DocumentData | null;
 
   let elapsedTime = "00:00:00";
   let intervalId: number | null = null;

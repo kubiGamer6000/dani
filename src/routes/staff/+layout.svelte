@@ -23,36 +23,6 @@
       >
         🍆 Dani's Catering
       </a>
-      <!-- <a
-          href="##"
-          class="text-foreground hover:text-foreground transition-colors"
-        >
-          Dashboard
-        </a>
-        <a
-          href="##"
-          class="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Orders
-        </a>
-        <a
-          href="##"
-          class="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Products
-        </a>
-        <a
-          href="##"
-          class="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Customers
-        </a>
-        <a
-          href="##"
-          class="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          Analytics
-        </a> -->
       <Button on:click={toggleMode} variant="outline" size="icon">
         <Sun
           class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
