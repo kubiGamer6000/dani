@@ -16,6 +16,7 @@ import {
   query,
   where,
   writeBatch,
+  runTransaction,
 } from "firebase/firestore";
 import {
   getStartOfWeek,
@@ -24,6 +25,7 @@ import {
   dateToTimestamp,
   calculateTotalHours,
 } from "$lib/utils/rotaUtils";
+import { is } from "date-fns/locale";
 
 function createRotaStore() {
   const { subscribe, set, update } = writable({
@@ -32,17 +34,29 @@ function createRotaStore() {
     rota: null as Rota | null,
     shifts: [] as EditableShift[],
     isEditing: false,
+    isLoadingUsers: true,
+    isLoadingRota: true,
+    error: null as string | null,
   });
 
   return {
     subscribe,
 
     loadUsers: async () => {
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      const users = usersSnapshot.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() } as User)
-      );
-      update((state) => ({ ...state, users }));
+      try {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const users = usersSnapshot.docs.map(
+          (doc) => ({ id: doc.id, ...doc.data() } as User)
+        );
+        update((state) => ({ ...state, users, isLoadingUsers: false }));
+      } catch (error) {
+        console.error("Error loading users:", error);
+        update((state) => ({
+          ...state,
+          isLoadingUsers: false,
+          error: "Failed to load users",
+        }));
+      }
     },
 
     loadRota: async (weekStart: Date) => {
@@ -74,56 +88,20 @@ function createRotaStore() {
         currentWeekStart: weekStart,
         rota,
         shifts,
+        isLoadingRota: false,
       }));
     },
 
-    copyPreviousWeek: async () => {
-      const store = get(rotaStore);
-      const previousWeekStart = new Date(
-        store.currentWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000
-      );
-      const previousRotaDoc = doc(db, "rotas", formatDate(previousWeekStart));
-      const previousRotaSnapshot = await getDoc(previousRotaDoc);
-
-      if (previousRotaSnapshot.exists()) {
-        const previousRota = previousRotaSnapshot.data() as Rota;
-        const previousShiftsQuery = query(
-          collection(db, "rotaShifts"),
-          where("rota_id", "==", formatDate(previousWeekStart))
-        );
-        const previousShiftsSnapshot = await getDocs(previousShiftsQuery);
-
-        const newShifts: EditableShift[] = previousShiftsSnapshot.docs.map(
-          (doc) => {
-            const shift = doc.data() as RotaShift;
-            return {
-              ...shift,
-              rota_id: formatDate(store.currentWeekStart),
-              start_time: timestampToDate(shift.start_time),
-              end_time: timestampToDate(shift.end_time),
-            };
-          }
-        );
-
-        update((state) => ({
-          ...state,
-          rota: {
-            ...previousRota,
-            id: formatDate(state.currentWeekStart),
-            week_start_date: dateToTimestamp(state.currentWeekStart),
-            week_end_date: dateToTimestamp(
-              new Date(
-                state.currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000
-              )
-            ),
-          },
-          shifts: newShifts,
-        }));
-      }
-    },
-
     createRota: async (weekStart: Date) => {
-      const newRotaDoc = doc(db, "rotas", formatDate(weekStart));
+      const rotaId = formatDate(weekStart);
+      const existingRotaDoc = await getDoc(doc(db, "rotas", rotaId));
+
+      if (existingRotaDoc.exists()) {
+        console.error("Rota already exists for this week");
+        return;
+      }
+
+      const newRotaDoc = doc(db, "rotas", rotaId);
       const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
       const newRota: Rota = {
         id: newRotaDoc.id,
@@ -143,45 +121,48 @@ function createRotaStore() {
       const state = get(rotaStore);
       if (!state.rota) return;
 
-      const batch = writeBatch(db);
-      const rotaRef = doc(db, "rotas", state.rota.id);
-      const totalHours: Record<string, number> = {};
-
       try {
-        // Delete all existing shifts for this rota
-        const deleteShiftsQuery = query(
-          collection(db, "rotaShifts"),
-          where("rota_id", "==", state.rota.id)
-        );
-        const querySnapshot = await getDocs(deleteShiftsQuery);
-        querySnapshot.forEach((doc) => {
-          batch.delete(doc.ref);
+        let totalHours: Record<string, number>;
+        await runTransaction(db, async (transaction) => {
+          const rotaRef = doc(db, "rotas", state.rota!.id);
+          const rotaDoc = await transaction.get(rotaRef);
+
+          if (!rotaDoc.exists()) {
+            throw "Rota does not exist!";
+          }
+
+          // Delete existing shifts
+          const deleteShiftsQuery = query(
+            collection(db, "rotaShifts"),
+            where("rota_id", "==", state.rota!.id)
+          );
+          const querySnapshot = await getDocs(deleteShiftsQuery);
+          querySnapshot.forEach((doc) => {
+            transaction.delete(doc.ref);
+          });
+
+          // Add new shifts and calculate total hours
+          totalHours = {};
+          submittedShifts.forEach((shift) => {
+            const newShiftRef = doc(collection(db, "rotaShifts"));
+            const newShift: RotaShift = {
+              id: newShiftRef.id,
+              rota_id: state.rota!.id,
+              user_id: shift.user_id,
+              day: shift.day,
+              start_time: dateToTimestamp(shift.start_time),
+              end_time: dateToTimestamp(shift.end_time),
+            };
+            transaction.set(newShiftRef, newShift);
+
+            const userHours = calculateTotalHours([shift]);
+            totalHours[shift.user_id] =
+              (totalHours[shift.user_id] || 0) + userHours;
+          });
+
+          // Update rota with new total hours
+          transaction.update(rotaRef, { total_hours: totalHours });
         });
-
-        // Add new shifts from submitted data
-        submittedShifts.forEach((shift) => {
-          const newShiftRef = doc(collection(db, "rotaShifts"));
-          const newShift: RotaShift = {
-            id: newShiftRef.id,
-            rota_id: state.rota!.id,
-            user_id: shift.user_id,
-            day: shift.day,
-            start_time: dateToTimestamp(shift.start_time),
-            end_time: dateToTimestamp(shift.end_time),
-          };
-          batch.set(newShiftRef, newShift);
-
-          // Calculate total hours for each user
-          const userHours = calculateTotalHours([shift]);
-          totalHours[shift.user_id] =
-            (totalHours[shift.user_id] || 0) + userHours;
-        });
-
-        // Update rota with new total hours
-        batch.update(rotaRef, { total_hours: totalHours });
-
-        // Commit the batch
-        await batch.commit();
 
         console.log("Rota saved successfully");
 
@@ -194,8 +175,7 @@ function createRotaStore() {
         }));
       } catch (error) {
         console.error("Error saving rota:", error);
-        // Optionally, you can update the store to reflect the error state
-        // update(state => ({ ...state, error: "Failed to save rota" }));
+        update((state) => ({ ...state, error: "Failed to save rota" }));
       }
     },
     setEditing: (isEditing: boolean) => {

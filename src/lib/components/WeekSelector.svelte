@@ -22,14 +22,30 @@
   }
 </script>
 
-<div class="flex items-center justify-between mb-4">
-  <Button variant="outline" class="text-md" on:click={() => dispatch("prev")}>
-    <ArrowLeft class="w-4 h-4 mr-2" />
-    Previous Week
-  </Button>
-  <span class="text-xl font-medium">{formattedDate}</span>
-  <Button variant="outline" class="text-md" on:click={() => dispatch("next")}>
-    Next Week
-    <ArrowRight class="w-4 h-4 ml-2" />
-  </Button>
+<div
+  class="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mb-4 space-y-4 sm:space-y-0"
+>
+  <span class="text-xl font-medium mb-2 sm:mb-0 sm:mr-4 sm:self-center"
+    >{formattedDate}</span
+  >
+  <div class="flex w-full sm:w-auto justify-between sm:justify-end space-x-2">
+    <Button
+      variant="outline"
+      class="text-sm sm:text-md flex-1 sm:flex-initial"
+      on:click={() => dispatch("prev")}
+    >
+      <ArrowLeft class="w-4 h-4 mr-2" />
+      <span class="hidden sm:inline">Previous</span>
+      <span class="sm:hidden">Prev</span>
+    </Button>
+    <Button
+      variant="outline"
+      class="text-sm sm:text-md flex-1 sm:flex-initial"
+      on:click={() => dispatch("next")}
+    >
+      <span class="hidden sm:inline">Next</span>
+      <span class="sm:hidden">Next</span>
+      <ArrowRight class="w-4 h-4 ml-2" />
+    </Button>
+  </div>
 </div>

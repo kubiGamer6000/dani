@@ -16,6 +16,7 @@
   import { Input } from "$lib/components/ui/input";
   import { Button } from "$lib/components/ui/button";
   import * as Alert from "$lib/components/ui/alert";
+  import { ScrollArea } from "$lib/components/ui/scroll-area";
 
   import CircleAlert from "lucide-svelte/icons/circle-alert";
   import CircleCheck from "lucide-svelte/icons/circle-check";
@@ -309,7 +310,7 @@
                 <div transition:fade={{ duration: 200 }}>
                   <Input
                     type="text"
-                    class="w-full p-1 text-xs md:text-sm border rounded"
+                    class="w-full p-1  border rounded"
                     placeholder="Batch edit"
                     on:input={(e) =>
                       handleBatchEdit(day, e.currentTarget.value)}
@@ -339,7 +340,7 @@
                   <div transition:fade={{ duration: 200 }}>
                     <Input
                       type="text"
-                      class={`w-full p-1 text-xs md:text-sm border rounded transition-colors duration-200 ${
+                      class={`w-full p-1  border rounded transition-colors duration-200 ${
                         invalidFields[`${user.id}-${day}`]
                           ? "border-red-500"
                           : ""
@@ -351,7 +352,7 @@
                     />
                   </div>
                 {:else if getShiftsForUserAndDay(user.id, day).length > 0}
-                  <span class="text-xs md:text-sm">
+                  <span class="">
                     {getShiftsForUserAndDay(user.id, day)
                       .map(formatShift)
                       .join(", ")}
@@ -363,7 +364,7 @@
             {/each}
 
             <Table.Cell
-              class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b text-xs md:text-sm"
+              class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b "
             >
               {getUserTotalHours(user.id).toFixed(2)}
             </Table.Cell>
@@ -420,7 +421,7 @@
   {/if}
 </div> -->
 
-<div class="w-full">
+<div class="w-full max-w-full flex justify-center">
   {#if errorMessage}
     <div transition:fly={{ y: -20, duration: 300 }} class="mb-4">
       <Alert.Root variant="destructive">
@@ -440,85 +441,90 @@
       </Alert.Root>
     </div>
   {/if}
-
-  <div class="overflow-x-auto rounded-lg">
-    <Table.Root class="w-full text-sm md:text-base">
-      <Table.Header>
-        <Table.Row>
-          <Table.Head class="sticky left-0 z-10 bg-muted">Employee</Table.Head>
-          {#each days as day}
-            <Table.Head class="min-w-[100px]">
-              {day.slice(0, 3)}
-            </Table.Head>
-          {/each}
-          <Table.Head class="min-w-[80px]">Total</Table.Head>
-        </Table.Row>
-      </Table.Header>
-
-      <Table.Body>
-        {#if $rotaStore.isEditing}
+  <ScrollArea
+    class="w-96 md:w-['32rem'] lg:w-full whitespace-nowrap"
+    orientation="horizontal"
+  >
+    <div class="flex">
+      <Table.Root class="w-full text-sm md:text-base">
+        <Table.Header>
           <Table.Row>
-            <Table.Cell class="sticky left-0 bg-background"></Table.Cell>
+            <Table.Head class="sticky left-0 z-10 bg-muted">Employee</Table.Head
+            >
             {#each days as day}
-              <Table.Cell>
-                <div transition:fade={{ duration: 200 }}>
-                  <Input
-                    type="text"
-                    class="w-full text-xs md:text-sm"
-                    placeholder="Batch edit"
-                    on:input={(e) =>
-                      handleBatchEdit(day, e.currentTarget.value)}
-                  />
-                </div>
-              </Table.Cell>
+              <Table.Head class="min-w-[100px]">
+                {day.slice(0, 3)}
+              </Table.Head>
             {/each}
-            <Table.Cell></Table.Cell>
+            <Table.Head class="min-w-[80px]">Total</Table.Head>
           </Table.Row>
-        {/if}
+        </Table.Header>
 
-        {#each $rotaStore.users as user (user.id)}
-          <Table.Row>
-            <Table.Cell class="sticky left-0 bg-background font-medium">
-              {user.name}
-            </Table.Cell>
-
-            {#each days as day}
-              <Table.Cell>
-                {#if $rotaStore.isEditing}
+        <Table.Body>
+          {#if $rotaStore.isEditing}
+            <Table.Row>
+              <Table.Cell class="sticky left-0 bg-background"></Table.Cell>
+              {#each days as day}
+                <Table.Cell>
                   <div transition:fade={{ duration: 200 }}>
                     <Input
                       type="text"
-                      class={`w-full text-xs md:text-sm transition-colors duration-200 ${
-                        invalidFields[`${user.id}-${day}`]
-                          ? "border-red-500"
-                          : ""
-                      } ${saving ? "bg-blue-50" : ""}`}
-                      value={shiftInputs[`${user.id}-${day}`] || ""}
+                      class="w-full "
+                      placeholder="Batch edit"
                       on:input={(e) =>
-                        handleShiftInput(user.id, day, e.currentTarget.value)}
-                      on:blur={() => handleShiftBlur(user.id, day)}
+                        handleBatchEdit(day, e.currentTarget.value)}
                     />
                   </div>
-                {:else if getShiftsForUserAndDay(user.id, day).length > 0}
-                  <span class="text-xs md:text-sm">
-                    {getShiftsForUserAndDay(user.id, day)
-                      .map(formatShift)
-                      .join(", ")}
-                  </span>
-                {:else}
-                  <span class="text-muted-foreground">-</span>
-                {/if}
-              </Table.Cell>
-            {/each}
+                </Table.Cell>
+              {/each}
+              <Table.Cell></Table.Cell>
+            </Table.Row>
+          {/if}
 
-            <Table.Cell class="font-medium">
-              {getUserTotalHours(user.id).toFixed(2)}
-            </Table.Cell>
-          </Table.Row>
-        {/each}
-      </Table.Body>
-    </Table.Root>
-  </div>
+          {#each $rotaStore.users as user (user.id)}
+            <Table.Row>
+              <Table.Cell class="sticky left-0 bg-background font-medium">
+                {user.name}
+              </Table.Cell>
+
+              {#each days as day}
+                <Table.Cell>
+                  {#if $rotaStore.isEditing}
+                    <div transition:fade={{ duration: 200 }}>
+                      <Input
+                        type="text"
+                        class={`w-full  transition-colors duration-200 ${
+                          invalidFields[`${user.id}-${day}`]
+                            ? "border-red-500"
+                            : ""
+                        } ${saving ? "bg-blue-50" : ""}`}
+                        value={shiftInputs[`${user.id}-${day}`] || ""}
+                        on:input={(e) =>
+                          handleShiftInput(user.id, day, e.currentTarget.value)}
+                        on:blur={() => handleShiftBlur(user.id, day)}
+                      />
+                    </div>
+                  {:else if getShiftsForUserAndDay(user.id, day).length > 0}
+                    <span class="">
+                      {getShiftsForUserAndDay(user.id, day)
+                        .map(formatShift)
+                        .join(", ")}
+                    </span>
+                  {:else}
+                    <span class="text-muted-foreground">-</span>
+                  {/if}
+                </Table.Cell>
+              {/each}
+
+              <Table.Cell class="font-medium">
+                {getUserTotalHours(user.id).toFixed(2)}
+              </Table.Cell>
+            </Table.Row>
+          {/each}
+        </Table.Body>
+      </Table.Root>
+    </div>
+  </ScrollArea>
 </div>
 
 <div class="mt-4 space-y-2">

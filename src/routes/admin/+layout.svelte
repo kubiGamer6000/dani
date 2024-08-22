@@ -7,6 +7,7 @@
   import Users from "lucide-svelte/icons/users";
   import Sun from "lucide-svelte/icons/sun";
   import Moon from "lucide-svelte/icons/moon";
+  import CalendarRange from "lucide-svelte/icons/calendar-range";
 
   import Breadcrumbs from "$lib/components/custom/Breadcrumbs.svelte";
 
@@ -60,6 +61,13 @@
             <Users class="h-4 w-4" />
             Staff
           </a>
+          <a
+            href="/admin/rota"
+            class={`${$page.route.id?.includes("rota") ? "bg-muted text-primary" : "text-muted-foreground"} hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all`}
+          >
+            <CalendarRange class="h-4 w-4" />
+            Rota
+          </a>
         </nav>
       </div>
     </div>
@@ -109,6 +117,13 @@
             >
               <Users class="h-5 w-5" />
               Staff
+            </a>
+            <a
+              href="/admin/rota"
+              class={`${$page.route.id?.includes("rota") ? "bg-muted text-foreground" : "bg-background text-muted-foreground"} hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2`}
+            >
+              <CalendarRange class="h-5 w-5" />
+              Rota
             </a>
           </nav>
         </Sheet.Content>
@@ -160,7 +175,9 @@
       </Button>
     </header>
 
-    <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 h-screen">
+    <main
+      class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 h-screen max-w-full overflow-x-hidden"
+    >
       <Breadcrumbs path={$page.url.pathname} />
 
       <AnimatedRoute>

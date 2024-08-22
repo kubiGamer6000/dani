@@ -2,11 +2,15 @@
 import { Timestamp } from "firebase/firestore";
 import type { EditableShift } from "$lib/types/rotaTypes";
 
-export function getStartOfWeek(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
+export function getStartOfWeek(date: Date, startDay: number = 1): Date {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  );
+  const day = d.getUTCDay();
+  const diff =
+    d.getUTCDate() - day + (day >= startDay ? startDay - 7 : startDay);
+  d.setUTCDate(diff);
+  return d;
 }
 
 export function formatDate(date: Date): string {
