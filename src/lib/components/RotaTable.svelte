@@ -248,7 +248,7 @@
   }
 </script>
 
-<div class="w-full overflow-x-auto">
+<!-- <div class="w-full overflow-x-auto">
   {#if errorMessage}
     <div transition:fly={{ y: -20, duration: 300 }}>
       <Alert.Root variant="destructive" class="mb-4">
@@ -411,6 +411,148 @@
       <Button
         variant="secondary"
         class="w-full sm:w-auto"
+        on:click={() => rotaStore.setEditing(false)}
+        disabled={saving}
+      >
+        Cancel
+      </Button>
+    </div>
+  {/if}
+</div> -->
+
+<div class="w-full">
+  {#if errorMessage}
+    <div transition:fly={{ y: -20, duration: 300 }} class="mb-4">
+      <Alert.Root variant="destructive">
+        <CircleAlert class="w-4 h-4" />
+        <Alert.Title>Invalid data</Alert.Title>
+        <Alert.Description>{errorMessage}</Alert.Description>
+      </Alert.Root>
+    </div>
+  {/if}
+
+  {#if successMessage}
+    <div transition:fly={{ y: -20, duration: 300 }} class="mb-4">
+      <Alert.Root variant="default" class="border-green-600 text-green-600">
+        <CircleCheck class="w-4 h-4" color="#16a34a" />
+        <Alert.Title>Success!</Alert.Title>
+        <Alert.Description>{successMessage}</Alert.Description>
+      </Alert.Root>
+    </div>
+  {/if}
+
+  <div class="overflow-x-auto rounded-lg">
+    <Table.Root class="w-full text-sm md:text-base">
+      <Table.Header>
+        <Table.Row>
+          <Table.Head class="sticky left-0 z-10 bg-muted">Employee</Table.Head>
+          {#each days as day}
+            <Table.Head class="min-w-[100px]">
+              {day.slice(0, 3)}
+            </Table.Head>
+          {/each}
+          <Table.Head class="min-w-[80px]">Total</Table.Head>
+        </Table.Row>
+      </Table.Header>
+
+      <Table.Body>
+        {#if $rotaStore.isEditing}
+          <Table.Row>
+            <Table.Cell class="sticky left-0 bg-background"></Table.Cell>
+            {#each days as day}
+              <Table.Cell>
+                <div transition:fade={{ duration: 200 }}>
+                  <Input
+                    type="text"
+                    class="w-full text-xs md:text-sm"
+                    placeholder="Batch edit"
+                    on:input={(e) =>
+                      handleBatchEdit(day, e.currentTarget.value)}
+                  />
+                </div>
+              </Table.Cell>
+            {/each}
+            <Table.Cell></Table.Cell>
+          </Table.Row>
+        {/if}
+
+        {#each $rotaStore.users as user (user.id)}
+          <Table.Row>
+            <Table.Cell class="sticky left-0 bg-background font-medium">
+              {user.name}
+            </Table.Cell>
+
+            {#each days as day}
+              <Table.Cell>
+                {#if $rotaStore.isEditing}
+                  <div transition:fade={{ duration: 200 }}>
+                    <Input
+                      type="text"
+                      class={`w-full text-xs md:text-sm transition-colors duration-200 ${
+                        invalidFields[`${user.id}-${day}`]
+                          ? "border-red-500"
+                          : ""
+                      } ${saving ? "bg-blue-50" : ""}`}
+                      value={shiftInputs[`${user.id}-${day}`] || ""}
+                      on:input={(e) =>
+                        handleShiftInput(user.id, day, e.currentTarget.value)}
+                      on:blur={() => handleShiftBlur(user.id, day)}
+                    />
+                  </div>
+                {:else if getShiftsForUserAndDay(user.id, day).length > 0}
+                  <span class="text-xs md:text-sm">
+                    {getShiftsForUserAndDay(user.id, day)
+                      .map(formatShift)
+                      .join(", ")}
+                  </span>
+                {:else}
+                  <span class="text-muted-foreground">-</span>
+                {/if}
+              </Table.Cell>
+            {/each}
+
+            <Table.Cell class="font-medium">
+              {getUserTotalHours(user.id).toFixed(2)}
+            </Table.Cell>
+          </Table.Row>
+        {/each}
+      </Table.Body>
+    </Table.Root>
+  </div>
+</div>
+
+<div class="mt-4 space-y-2">
+  {#if !$rotaStore.isEditing}
+    <Button class="w-full" on:click={() => rotaStore.setEditing(true)}>
+      <Pencil class="w-4 h-4 mr-2" />
+      Edit Rota
+    </Button>
+  {:else}
+    <div class="flex flex-col sm:flex-row gap-2">
+      <Button
+        class="w-full sm:flex-1 transition-all duration-200"
+        on:click={handleSave}
+        disabled={saving}
+      >
+        {#if saving}
+          <LoaderCircle class="w-4 h-4 mr-2 animate-spin" />
+        {:else}
+          <Check class="w-4 h-4 mr-2" />
+        {/if}
+        Save Changes
+      </Button>
+      <Button
+        variant="destructive"
+        class="w-full sm:flex-1"
+        on:click={clearTable}
+        disabled={saving}
+      >
+        <Delete class="w-4 h-4 mr-2" />
+        Delete All
+      </Button>
+      <Button
+        variant="secondary"
+        class="w-full sm:flex-1"
         on:click={() => rotaStore.setEditing(false)}
         disabled={saving}
       >
