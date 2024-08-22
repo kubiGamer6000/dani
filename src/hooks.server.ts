@@ -7,7 +7,6 @@ export const handle = (async ({ event, resolve }) => {
   try {
     const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie!);
     event.locals.uid = decodedClaims.uid;
-    event.locals.role = decodedClaims.role;
   } catch (e) {
     event.locals.uid = null;
   }
@@ -25,13 +24,14 @@ export const handle = (async ({ event, resolve }) => {
       throw redirect(302, `/login?redirectTo=${fromUrl}`);
     }
 
-    if (
-      event.url.pathname.startsWith("/admin") &&
-      event.locals.role !== "admin"
-    ) {
-      console.log("User is not an admin. Redirecting to home...");
-      throw redirect(302, "/");
-    }
+    // if (
+    //   event.url.pathname.startsWith("/admin") &&
+    //   event.locals.role !== "admin"
+    // ) {
+    //   console.log("user role: ", event.locals.role);
+    //   console.log("User is not an admin. Redirecting to home...");
+    //   throw redirect(302, "/");
+    // }
   }
 
   return resolve(event);
