@@ -10,7 +10,7 @@
 
   import type { EditableShift, User } from "$lib/types/rotaTypes";
 
-  import { createEventDispatcher, onMount } from "svelte";
+  import { createEventDispatcher, onMount, afterUpdate } from "svelte";
 
   import * as Table from "$lib/components/ui/table";
   import { Input } from "$lib/components/ui/input";
@@ -27,6 +27,7 @@
 
   import { fade, fly } from "svelte/transition";
   import { flip } from "svelte/animate";
+  import { get } from "svelte/store";
 
   let saving = false;
 
@@ -59,18 +60,24 @@
   // Initialize shift inputs on component mount
 
   onMount(() => {
-    $rotaStore.users.forEach((user) => {
+    updateShiftInputs();
+  });
+
+  function updateShiftInputs() {
+    const storeState = get(rotaStore);
+    const newShiftInputs: { [key: string]: string } = {};
+
+    storeState.users.forEach((user) => {
       days.forEach((day) => {
         const key = `${user.id}-${day}`;
-
-        shiftInputs[key] = getShiftsForUserAndDay(user.id, day)
+        newShiftInputs[key] = getShiftsForUserAndDay(user.id, day)
           .map(formatShift)
-
           .join(", ");
       });
     });
-  });
 
+    shiftInputs = newShiftInputs;
+  }
   // Helper function to get shifts for a specific user and day
 
   function getShiftsForUserAndDay(
@@ -162,11 +169,11 @@
   // Handle batch edit for all users on a specific day
 
   function handleBatchEdit(day: string, value: string) {
-    if (!validateShift(value)) {
-      errorMessage = `Invalid shift format for batch edit on ${day}: ${value}`;
+    // if (!validateShift(value)) {
+    //   errorMessage = `Invalid shift format for batch edit on ${day}: ${value}`;
 
-      return;
-    }
+    //   return;
+    // }
 
     $rotaStore.users.forEach((user) => {
       const key = `${user.id}-${day}`;
@@ -421,7 +428,7 @@
   {/if}
 </div> -->
 
-<div class="w-full max-w-full flex justify-center">
+<div class="w-full">
   {#if errorMessage}
     <div transition:fly={{ y: -20, duration: 300 }} class="mb-4">
       <Alert.Root variant="destructive">
@@ -529,7 +536,13 @@
 
 <div class="mt-4 space-y-2">
   {#if !$rotaStore.isEditing}
-    <Button class="w-full" on:click={() => rotaStore.setEditing(true)}>
+    <Button
+      class="w-full"
+      on:click={() => {
+        updateShiftInputs();
+        rotaStore.setEditing(true);
+      }}
+    >
       <Pencil class="w-4 h-4 mr-2" />
       Edit Rota
     </Button>

@@ -6,8 +6,6 @@
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
   import ArrowRight from "lucide-svelte/icons/arrow-right";
 
-  import dayjs from "dayjs";
-
   export let currentWeekStart: Date;
 
   const dispatch = createEventDispatcher();
@@ -15,10 +13,41 @@
   $: formattedDate = formatDateRange(currentWeekStart);
 
   function formatDateRange(startDate: Date): string {
-    const start = dayjs(startDate);
-    const end = start.add(6, "day");
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
 
-    return `${start.format("DD/MM")} (Mon) - ${end.format("DD/MM")} (Sun)`;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const thisWeekStart = new Date(today);
+    thisWeekStart.setDate(today.getDate() - today.getDay() + 1);
+
+    const nextWeekStart = new Date(thisWeekStart);
+    nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    const formatDate = (date: Date) => {
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      return `${day}/${month}`;
+    };
+
+    const dateRange = `${formatDate(start)} - ${formatDate(end)}`;
+
+    if (start.getTime() === thisWeekStart.getTime()) {
+      return `This week (${dateRange})`;
+    } else if (start.getTime() === nextWeekStart.getTime()) {
+      return `Next week (${dateRange})`;
+    } else if (start.getTime() === lastWeekStart.getTime()) {
+      return `Last week (${dateRange})`;
+    } else {
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      return `${formatDate(start)} (${days[start.getDay()]}) - ${formatDate(end)} (${days[end.getDay()]})`;
+    }
   }
 </script>
 

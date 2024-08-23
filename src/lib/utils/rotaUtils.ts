@@ -8,10 +8,13 @@ export function getStartOfWeek(date: Date, startDay: number = 1): Date {
   );
   const day = d.getUTCDay();
   const diff =
-    d.getUTCDate() - day + (day >= startDay ? startDay - 7 : startDay);
+    d.getUTCDate() - day + (day < startDay ? startDay - 7 : startDay);
+
   d.setUTCDate(diff);
   return d;
 }
+
+console.log(getStartOfWeek(new Date()));
 
 export function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
