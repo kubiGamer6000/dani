@@ -28,12 +28,25 @@
   import { fade, fly } from "svelte/transition";
   import { flip } from "svelte/animate";
   import { get } from "svelte/store";
+  import { Collection, Doc } from "sveltefire";
+  import { Timestamp } from "firebase/firestore";
+  import { db } from "$lib/firebase";
+  import dayjs from "dayjs";
+
+  type DayOfWeek =
+    | "Monday"
+    | "Tuesday"
+    | "Wednesday"
+    | "Thursday"
+    | "Friday"
+    | "Saturday"
+    | "Sunday";
 
   let saving = false;
 
   const dispatch = createEventDispatcher();
 
-  const days = [
+  const days: DayOfWeek[] = [
     "Monday",
 
     "Tuesday",
@@ -48,6 +61,12 @@
 
     "Sunday",
   ];
+
+  const getDayOfWeek = (mondayDate: Date, dayName: DayOfWeek): Date => {
+    const dayIndex = days.indexOf(dayName);
+    if (dayIndex === -1) throw new Error("Invalid day name");
+    return dayjs(mondayDate).add(dayIndex, "day").toDate();
+  };
 
   let errorMessage = "";
 
@@ -91,6 +110,8 @@
         shift.day.toLowerCase() === day.toLowerCase()
     );
   }
+
+  function getCheckInsForUserAndDay(userId: string, day: string) {}
 
   // Validate a single shift string
 
@@ -520,6 +541,23 @@
                   {:else}
                     <span class="text-muted-foreground">-</span>
                   {/if}
+                  <span class="text-primary italic">
+                    <br />
+                    <Doc
+                      ref={`shifts/${user.id}_${dayjs(
+                        getDayOfWeek($rotaStore.currentWeekStart, day)
+                      ).format("YYYY-MM-DD")}`}
+                      let:data={shift}
+                    >
+                      {#each shift.checkIns as checkIn}
+                        {#if checkIn.out.time}
+                          {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - ${dayjs(checkIn.out.time.toDate()).format("HH:MM")} `}
+                        {:else}
+                          {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - Ongoing.. `}
+                        {/if}
+                      {/each}
+                    </Doc>
+                  </span>
                 </Table.Cell>
               {/each}
 

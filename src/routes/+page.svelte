@@ -27,7 +27,7 @@
           <Button
             class="w-full"
             on:click={() => {
-              goto("/staff");
+              goto("/staff/shifts");
             }}
           >
             Go to app
