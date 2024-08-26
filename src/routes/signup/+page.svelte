@@ -106,7 +106,7 @@
 <main
   class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 h-screen items-center justify-center"
 >
-  <h1 class="p-4 text-3xl font-semibold">Dani's Catering 🍆</h1>
+  <h1 class="p-4 text-3xl font-semibold">Dani's Catering</h1>
 
   <Card.Root class="mx-auto max-w-sm">
     <Card.Header>

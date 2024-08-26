@@ -29,7 +29,7 @@
       <div class="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
         <a href="/" class="flex items-center gap-2 font-semibold">
           <!-- <Package2 class="h-6 w-6" /> -->
-          <h1>🍆</h1>
+          <img class="h-6 w-6" src="/logo.webp" alt="Logo" />
           <span class="">Dani's Catering</span>
         </a>
       </div>
@@ -142,7 +142,11 @@
           </div>
         </form>
       </div> -->
-      <h1 class="font-semibold">Dani's Catering</h1>
+      <div class="flex items-center">
+        <img class="h-8 w-8 mr-2" src="/logo.webp" alt="Logo" />
+        <h1 class="font-semibold">Dani's Catering</h1>
+      </div>
+
       <!-- <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild let:builder>
           <Button

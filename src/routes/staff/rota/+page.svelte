@@ -7,12 +7,12 @@
   import * as Table from "$lib/components/ui/table/index.js";
 
   import WeekSelector from "$lib/components/WeekSelector.svelte";
-  import { collection, query, where } from "firebase/firestore";
+  import { collection, query, where, orderBy } from "firebase/firestore";
 
   import AuthCheck from "$lib/components/auth/AuthCheck.svelte";
 
   import dayjs from "dayjs";
-  import { getStartOfWeek } from "$lib/utils/rotaUtils";
+  import { getStartOfWeek, formatShift } from "$lib/utils/rotaUtils";
 
   type DayOfWeek =
     | "Monday"
@@ -39,25 +39,22 @@
     "Sunday",
   ];
 
-  let currentWeekStart: Date = getStartOfWeek(new Date());
+  let currentWeekStart = getStartOfWeek(new Date());
 
-  function changeWeek(offset: number) {}
-
-  const getDayOfWeek = (mondayDate: Date, dayName: DayOfWeek): Date => {
-    const dayIndex = days.indexOf(dayName);
-    if (dayIndex === -1) throw new Error("Invalid day name");
-    return dayjs(mondayDate).add(dayIndex, "day").toDate();
-  };
+  function changeWeek(offset: number) {
+    const newWeekStartDate = new Date(currentWeekStart);
+    newWeekStartDate.setDate(newWeekStartDate.getDate() + offset * 7);
+    currentWeekStart = newWeekStartDate;
+  }
 </script>
 
 <AuthCheck>
-  <WeekSelector
+  <!-- <WeekSelector
     {currentWeekStart}
     on:prev={() => changeWeek(-1)}
     on:next={() => changeWeek(1)}
-  />
-
-  <h2 class="text-lg font-semibold">Rota</h2>
+  /> -->
+  <h2 class="p-2 text-3xl font-semibold">Rota</h2>
   <Table.Root class="my-4">
     <Table.Header>
       <Table.Row>
@@ -76,11 +73,21 @@
             ref={query(
               collection(db, "rotaShifts"),
               where("day", "==", day),
-              where("rota_id", "==", currentWeekStart),
-              where("user_id", "==", $user?.uid)
+              where(
+                "rota_id",
+                "==",
+                dayjs(currentWeekStart).format("YYYY-MM-DD")
+              ),
+              where("user_id", "==", $user?.uid),
+              orderBy("start_time", "asc")
             )}
             let:data={shifts}
-          ></Collection>
+          >
+            {#each shifts as shift}
+              {formatShift(shift)}
+              <br />
+            {/each}
+          </Collection>
         </Table.Cell>
       </Table.Row>
     {/each}
