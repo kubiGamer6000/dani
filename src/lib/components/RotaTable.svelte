@@ -3,9 +3,9 @@
 
   import {
     parseShiftTime,
-    formatShiftTime,
     calculateTotalHours,
     dateToTimestamp,
+    formatShift,
   } from "$lib/utils/rotaUtils";
 
   import type { EditableShift, User } from "$lib/types/rotaTypes";
@@ -26,14 +26,15 @@
   import Delete from "lucide-svelte/icons/delete";
 
   import { fade, fly } from "svelte/transition";
-  import { flip } from "svelte/animate";
+
   import { get } from "svelte/store";
   import { Collection, Doc } from "sveltefire";
-  import { Timestamp } from "firebase/firestore";
-  import { db } from "$lib/firebase";
+
   import dayjs from "dayjs";
 
   import { Skeleton } from "$lib/components/ui/skeleton";
+
+  let saving = false;
 
   // Assume we have 7 days and 5 users for this example
   const dayCount = 7;
@@ -47,9 +48,6 @@
     | "Friday"
     | "Saturday"
     | "Sunday";
-
-  let saving = false;
-
 
   const days: DayOfWeek[] = [
     "Monday",
@@ -116,8 +114,6 @@
     );
   }
 
-  function getCheckInsForUserAndDay(userId: string, day: string) {}
-
   // Validate a single shift string
 
   function validateShift(shiftStr: string): boolean {
@@ -177,20 +173,6 @@
   }
 
   // Format shift for display
-
-  function formatShift(shift: EditableShift): string {
-    const start =
-      shift.start_time instanceof Date
-        ? shift.start_time
-        : new Date(shift.start_time.seconds * 1000);
-
-    const end =
-      shift.end_time instanceof Date
-        ? shift.end_time
-        : new Date(shift.end_time.seconds * 1000);
-
-    return `${formatShiftTime(start)} - ${formatShiftTime(end)}`;
-  }
 
   // Handle batch edit for all users on a specific day
 

@@ -78,3 +78,17 @@ export function calculateTotalHours(shifts: EditableShift[]): number {
     return total + duration;
   }, 0);
 }
+
+export function formatShift(shift: EditableShift): string {
+  const start =
+    shift.start_time instanceof Date
+      ? shift.start_time
+      : new Date(shift.start_time.seconds * 1000);
+
+  const end =
+    shift.end_time instanceof Date
+      ? shift.end_time
+      : new Date(shift.end_time.seconds * 1000);
+
+  return `${formatShiftTime(start)} - ${formatShiftTime(end)}`;
+}

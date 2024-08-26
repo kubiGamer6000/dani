@@ -190,7 +190,7 @@
           <Button type="submit" class="w-full" disabled={loading}>
             {#if loading}Creating account...{:else}Create an account{/if}
           </Button>
-          <Button
+          <!-- <Button
             variant="outline"
             class="w-full"
             on:click={signUpWithGoogle}
@@ -198,12 +198,13 @@
           >
             {#if loading}Creating account...{:else}Sign up with Google{/if}
           </Button>
-        </form>
-        <div class="mt-4 text-center text-sm">
-          Already have an account?
-          <a href="/login" class="underline"> Log in </a>
-        </div>
-      </SignedOut>
+        </form> -->
+          <div class="mt-4 text-center text-sm">
+            Already have an account?
+            <a href="/login" class="underline"> Log in </a>
+          </div>
+        </form></SignedOut
+      >
     </Card.Content>
   </Card.Root>
 </main>
