@@ -372,9 +372,9 @@
                       >
                         {#each shift.checkIns as checkIn}
                           {#if checkIn.out.time}
-                            {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - ${dayjs(checkIn.out.time.toDate()).format("HH:MM")} `}
+                            {`${dayjs(checkIn.in.time.toDate()).format("HH:mm")} - ${dayjs(checkIn.out.time.toDate()).format("HH:MM")} `}
                           {:else}
-                            {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - Ongoing.. `}
+                            {`${dayjs(checkIn.in.time.toDate()).format("HH:mm")} - Ongoing.. `}
                           {/if}
                         {/each}
                       </Doc>
