@@ -21,12 +21,16 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const thisWeekStart = new Date(today);
-    thisWeekStart.setDate(today.getDate() - today.getDay() + 1);
+    const getWeekStart = (date: Date) => {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+      return new Date(d.setDate(diff));
+    };
 
+    const thisWeekStart = getWeekStart(today);
     const nextWeekStart = new Date(thisWeekStart);
     nextWeekStart.setDate(nextWeekStart.getDate() + 7);
-
     const lastWeekStart = new Date(thisWeekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
 
@@ -38,15 +42,18 @@
 
     const dateRange = `${formatDate(start)} - ${formatDate(end)}`;
 
-    if (start.getTime() === thisWeekStart.getTime()) {
+    if (start >= thisWeekStart && start < nextWeekStart) {
       return `This week (${dateRange})`;
-    } else if (start.getTime() === nextWeekStart.getTime()) {
+    } else if (
+      start >= nextWeekStart &&
+      start < new Date(nextWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
+    ) {
       return `Next week (${dateRange})`;
-    } else if (start.getTime() === lastWeekStart.getTime()) {
+    } else if (start >= lastWeekStart && start < thisWeekStart) {
       return `Last week (${dateRange})`;
     } else {
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      return `${formatDate(start)} (${days[start.getDay()]}) - ${formatDate(end)} (${days[end.getDay()]})`;
+      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      return `${formatDate(start)} (${days[(start.getDay() + 6) % 7]}) - ${formatDate(end)} (${days[(end.getDay() + 6) % 7]})`;
     }
   }
 </script>

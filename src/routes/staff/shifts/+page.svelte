@@ -56,7 +56,9 @@
   };
 </script>
 
-<Card.Root class={`mx-auto w-full ${$userData?.isCheckedIn ? "" : "bg-muted"}`}>
+<Card.Root
+  class={`mx-auto w-full mb-8 ${$userData?.isCheckedIn ? "" : "bg-muted"}`}
+>
   <Card.Header>
     <Card.Title class="text-3xl">
       You are checked {$userData?.isCheckedIn ? "in" : "out"}</Card.Title

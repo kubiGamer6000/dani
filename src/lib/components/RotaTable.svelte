@@ -33,6 +33,12 @@
   import { db } from "$lib/firebase";
   import dayjs from "dayjs";
 
+  import { Skeleton } from "$lib/components/ui/skeleton";
+
+  // Assume we have 7 days and 5 users for this example
+  const dayCount = 7;
+  const userCount = 5;
+
   type DayOfWeek =
     | "Monday"
     | "Tuesday"
@@ -44,7 +50,6 @@
 
   let saving = false;
 
-  const dispatch = createEventDispatcher();
 
   const days: DayOfWeek[] = [
     "Monday",
@@ -277,178 +282,6 @@
   }
 </script>
 
-<!-- <div class="w-full overflow-x-auto">
-  {#if errorMessage}
-    <div transition:fly={{ y: -20, duration: 300 }}>
-      <Alert.Root variant="destructive" class="mb-4">
-        <CircleAlert class="w-4 h-4" />
-        <Alert.Title>Invalid data</Alert.Title>
-        <Alert.Description>{errorMessage}</Alert.Description>
-      </Alert.Root>
-    </div>
-  {/if}
-
-  {#if successMessage}
-    <div transition:fly={{ y: -20, duration: 300 }}>
-      <Alert.Root
-        variant="default"
-        class="mb-4 border-green-600 text-green-600"
-      >
-        <CircleCheck class="w-4 h-4" color="#16a34a" />
-        <Alert.Title>Success!</Alert.Title>
-        <Alert.Description>{successMessage}</Alert.Description>
-      </Alert.Root>
-    </div>
-  {/if}
-
-  <div class="inline-block min-w-full rounded-lg overflow-hidden">
-    <Table.Root class="w-full text-sm md:text-base">
-      <Table.Header>
-        <Table.Row>
-          <Table.Head
-            class="px-2 py-2 md:px-4 md:py-3 text-left bg-muted text-xs leading-4 font-medium text-muted-foreground uppercase tracking-wider sticky left-0 z-10"
-          >
-            Employee
-          </Table.Head>
-          {#each days as day}
-            <Table.Head
-              class="px-2 py-2 md:px-4 md:py-3 bg-muted text-left text-xs leading-4 font-medium text-muted-foreground uppercase tracking-wider"
-            >
-              {day}
-            </Table.Head>
-          {/each}
-          <Table.Head
-            class="px-2 py-2 md:px-4 md:py-3 bg-muted text-left text-xs leading-4 font-medium text-muted-foreground uppercase tracking-wider"
-          >
-            Total Hours
-          </Table.Head>
-        </Table.Row>
-      </Table.Header>
-
-      <Table.Body>
-        {#if $rotaStore.isEditing}
-          <Table.Row>
-            <Table.Cell
-              class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b"
-            ></Table.Cell>
-            {#each days as day}
-              <Table.Cell
-                class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b"
-              >
-                <div transition:fade={{ duration: 200 }}>
-                  <Input
-                    type="text"
-                    class="w-full p-1  border rounded"
-                    placeholder="Batch edit"
-                    on:input={(e) =>
-                      handleBatchEdit(day, e.currentTarget.value)}
-                  />
-                </div>
-              </Table.Cell>
-            {/each}
-            <Table.Cell
-              class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b"
-            ></Table.Cell>
-          </Table.Row>
-        {/if}
-
-        {#each $rotaStore.users as user (user.id)}
-          <Table.Row>
-            <Table.Cell
-              class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b"
-            >
-              {user.name}
-            </Table.Cell>
-
-            {#each days as day}
-              <Table.Cell
-                class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b"
-              >
-                {#if $rotaStore.isEditing}
-                  <div transition:fade={{ duration: 200 }}>
-                    <Input
-                      type="text"
-                      class={`w-full p-1  border rounded transition-colors duration-200 ${
-                        invalidFields[`${user.id}-${day}`]
-                          ? "border-red-500"
-                          : ""
-                      } ${saving ? "bg-blue-50" : ""}`}
-                      value={shiftInputs[`${user.id}-${day}`] || ""}
-                      on:input={(e) =>
-                        handleShiftInput(user.id, day, e.currentTarget.value)}
-                      on:blur={() => handleShiftBlur(user.id, day)}
-                    />
-                  </div>
-                {:else if getShiftsForUserAndDay(user.id, day).length > 0}
-                  <span class="">
-                    {getShiftsForUserAndDay(user.id, day)
-                      .map(formatShift)
-                      .join(", ")}
-                  </span>
-                {:else}
-                  <span class="text-gray-400">-</span>
-                {/if}
-              </Table.Cell>
-            {/each}
-
-            <Table.Cell
-              class="px-2 py-2 md:px-4 md:py-3 whitespace-no-wrap border-b "
-            >
-              {getUserTotalHours(user.id).toFixed(2)}
-            </Table.Cell>
-          </Table.Row>
-        {/each}
-      </Table.Body>
-    </Table.Root>
-  </div>
-</div>
-
-<div
-  class="mt-4 flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 sm:space-x-4"
->
-  {#if !$rotaStore.isEditing}
-    <Button
-      class="w-full sm:w-auto"
-      on:click={() => rotaStore.setEditing(true)}
-    >
-      <Pencil class="w-4 h-4 mr-2" />
-      Edit Rota
-    </Button>
-  {:else}
-    <Button
-      class="w-full sm:w-auto transition-all duration-200"
-      on:click={handleSave}
-      disabled={saving}
-    >
-      {#if saving}
-        <LoaderCircle class="w-4 h-4 mr-2 animate-spin" />
-      {:else}
-        <Check class="w-4 h-4 mr-2" />
-      {/if}
-      Save Changes
-    </Button>
-    <div class="flex">
-      <Button
-        variant="destructive"
-        class="w-full sm:w-auto mr-2"
-        on:click={clearTable}
-        disabled={saving}
-      >
-        <Delete class="w-4 h-4 mr-2" />
-        Delete All
-      </Button>
-      <Button
-        variant="secondary"
-        class="w-full sm:w-auto"
-        on:click={() => rotaStore.setEditing(false)}
-        disabled={saving}
-      >
-        Cancel
-      </Button>
-    </div>
-  {/if}
-</div> -->
-
 <div class="w-full">
   {#if errorMessage}
     <div transition:fly={{ y: -20, duration: 300 }} class="mb-4">
@@ -474,100 +307,148 @@
     orientation="horizontal"
   >
     <div class="flex">
-      <Table.Root class="w-full text-sm md:text-base">
-        <Table.Header>
-          <Table.Row>
-            <Table.Head class="sticky left-0 z-10 bg-muted">Employee</Table.Head
-            >
-            {#each days as day}
-              <Table.Head class="min-w-[100px]">
-                {day.slice(0, 3)}
-              </Table.Head>
-            {/each}
-            <Table.Head class="min-w-[80px]">Total</Table.Head>
-          </Table.Row>
-        </Table.Header>
-
-        <Table.Body>
-          {#if $rotaStore.isEditing}
+      {#if !$rotaStore.isLoadingRota && !$rotaStore.isLoadingUsers}
+        <Table.Root class="w-full text-sm md:text-base">
+          <Table.Header>
             <Table.Row>
-              <Table.Cell class="sticky left-0 bg-background"></Table.Cell>
+              <Table.Head class="sticky left-0 z-10 bg-muted"
+                >Employee</Table.Head
+              >
               {#each days as day}
-                <Table.Cell>
-                  <div transition:fade={{ duration: 200 }}>
-                    <Input
-                      type="text"
-                      class="w-full "
-                      placeholder="Batch edit"
-                      on:input={(e) =>
-                        handleBatchEdit(day, e.currentTarget.value)}
-                    />
-                  </div>
-                </Table.Cell>
+                <Table.Head class="min-w-[100px]">
+                  {day.slice(0, 3)}
+                </Table.Head>
               {/each}
-              <Table.Cell></Table.Cell>
+              <Table.Head class="min-w-[80px]">Total</Table.Head>
             </Table.Row>
-          {/if}
+          </Table.Header>
 
-          {#each $rotaStore.users as user (user.id)}
-            <Table.Row>
-              <Table.Cell class="sticky left-0 bg-background font-medium">
-                {user.name}
-              </Table.Cell>
-
-              {#each days as day}
-                <Table.Cell>
-                  {#if $rotaStore.isEditing}
+          <Table.Body>
+            {#if $rotaStore.isEditing}
+              <Table.Row>
+                <Table.Cell class="sticky left-0 bg-background"></Table.Cell>
+                {#each days as day}
+                  <Table.Cell>
                     <div transition:fade={{ duration: 200 }}>
                       <Input
                         type="text"
-                        class={`w-full  transition-colors duration-200 ${
-                          invalidFields[`${user.id}-${day}`]
-                            ? "border-red-500"
-                            : ""
-                        } ${saving ? "bg-blue-50" : ""}`}
-                        value={shiftInputs[`${user.id}-${day}`] || ""}
+                        class="w-full "
+                        placeholder="Batch edit"
                         on:input={(e) =>
-                          handleShiftInput(user.id, day, e.currentTarget.value)}
-                        on:blur={() => handleShiftBlur(user.id, day)}
+                          handleBatchEdit(day, e.currentTarget.value)}
                       />
                     </div>
-                  {:else if getShiftsForUserAndDay(user.id, day).length > 0}
-                    <span class="">
-                      {getShiftsForUserAndDay(user.id, day)
-                        .map(formatShift)
-                        .join(", ")}
-                    </span>
-                  {:else}
-                    <span class="text-muted-foreground">-</span>
-                  {/if}
-                  <span class="text-primary italic">
-                    <br />
-                    <Doc
-                      ref={`shifts/${user.id}_${dayjs(
-                        getDayOfWeek($rotaStore.currentWeekStart, day)
-                      ).format("YYYY-MM-DD")}`}
-                      let:data={shift}
-                    >
-                      {#each shift.checkIns as checkIn}
-                        {#if checkIn.out.time}
-                          {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - ${dayjs(checkIn.out.time.toDate()).format("HH:MM")} `}
-                        {:else}
-                          {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - Ongoing.. `}
-                        {/if}
-                      {/each}
-                    </Doc>
-                  </span>
-                </Table.Cell>
-              {/each}
+                  </Table.Cell>
+                {/each}
+                <Table.Cell></Table.Cell>
+              </Table.Row>
+            {/if}
 
-              <Table.Cell class="font-medium">
-                {getUserTotalHours(user.id).toFixed(2)}
-              </Table.Cell>
+            {#each $rotaStore.users as user (user.id)}
+              <Table.Row>
+                <Table.Cell class="sticky left-0 bg-background font-medium">
+                  {user.name}
+                </Table.Cell>
+
+                {#each days as day}
+                  <Table.Cell>
+                    {#if $rotaStore.isEditing}
+                      <div transition:fade={{ duration: 200 }}>
+                        <Input
+                          type="text"
+                          class={`w-full  transition-colors duration-200 ${
+                            invalidFields[`${user.id}-${day}`]
+                              ? "border-red-500"
+                              : ""
+                          } ${saving ? "bg-blue-50" : ""}`}
+                          value={shiftInputs[`${user.id}-${day}`] || ""}
+                          on:input={(e) =>
+                            handleShiftInput(
+                              user.id,
+                              day,
+                              e.currentTarget.value
+                            )}
+                          on:blur={() => handleShiftBlur(user.id, day)}
+                        />
+                      </div>
+                    {:else if getShiftsForUserAndDay(user.id, day).length > 0}
+                      <span class="">
+                        {getShiftsForUserAndDay(user.id, day)
+                          .map(formatShift)
+                          .join(", ")}
+                      </span>
+                    {:else}
+                      <span class="text-muted-foreground">-</span>
+                    {/if}
+                    <span class="text-primary italic">
+                      <br />
+                      <Doc
+                        ref={`shifts/${user.id}_${dayjs(
+                          getDayOfWeek($rotaStore.newWeekStart, day)
+                        ).format("YYYY-MM-DD")}`}
+                        let:data={shift}
+                      >
+                        {#each shift.checkIns as checkIn}
+                          {#if checkIn.out.time}
+                            {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - ${dayjs(checkIn.out.time.toDate()).format("HH:MM")} `}
+                          {:else}
+                            {`${dayjs(checkIn.in.time.toDate()).format("HH:MM")} - Ongoing.. `}
+                          {/if}
+                        {/each}
+                      </Doc>
+                    </span>
+                  </Table.Cell>
+                {/each}
+
+                <Table.Cell class="font-medium">
+                  {getUserTotalHours(user.id).toFixed(2)}
+                </Table.Cell>
+              </Table.Row>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+      {:else}
+        <Table.Root class="w-full text-sm md:text-base">
+          <Table.Header>
+            <Table.Row>
+              <Table.Head class="sticky left-0 z-10 bg-muted">
+                <Skeleton class="h-6 w-20" />
+              </Table.Head>
+              {#each Array(dayCount) as _, i}
+                <Table.Head class="min-w-[100px]">
+                  <Skeleton class="h-6 w-12" />
+                </Table.Head>
+              {/each}
+              <Table.Head class="min-w-[80px]">
+                <Skeleton class="h-6 w-16" />
+              </Table.Head>
             </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
+          </Table.Header>
+
+          <Table.Body>
+            {#each Array(userCount) as _, userIndex}
+              <Table.Row>
+                <Table.Cell class="sticky left-0 bg-background font-medium">
+                  <Skeleton class="h-6 w-24" />
+                </Table.Cell>
+
+                {#each Array(dayCount) as _, dayIndex}
+                  <Table.Cell>
+                    <div class="space-y-2">
+                      <Skeleton class="h-6 w-full" />
+                      <Skeleton class="h-4 w-3/4" />
+                    </div>
+                  </Table.Cell>
+                {/each}
+
+                <Table.Cell class="font-medium">
+                  <Skeleton class="h-6 w-16" />
+                </Table.Cell>
+              </Table.Row>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+      {/if}
     </div>
   </ScrollArea>
 </div>

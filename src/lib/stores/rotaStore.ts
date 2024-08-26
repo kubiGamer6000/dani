@@ -31,6 +31,7 @@ function createRotaStore() {
   const { subscribe, set, update } = writable({
     users: [] as User[],
     currentWeekStart: getStartOfWeek(new Date()),
+    newWeekStart: getStartOfWeek(new Date()),
     rota: null as Rota | null,
     shifts: [] as EditableShift[],
     isEditing: false,
@@ -44,7 +45,11 @@ function createRotaStore() {
 
     loadUsers: async () => {
       try {
-        const usersSnapshot = await getDocs(collection(db, "users"));
+        const staffQuery = query(
+          collection(db, "users"),
+          where("role", "==", "staff")
+        );
+        const usersSnapshot = await getDocs(staffQuery);
         const users = usersSnapshot.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() } as User)
         );
@@ -180,6 +185,14 @@ function createRotaStore() {
     },
     setEditing: (isEditing: boolean) => {
       update((state) => ({ ...state, isEditing }));
+    },
+    changeWeek: (offset: number, currentWeekStart: Date) => {
+      const newWeekStartDate = new Date(currentWeekStart);
+      newWeekStartDate.setDate(newWeekStartDate.getDate() + offset * 7);
+
+      update((state) => ({ ...state, newWeekStart: newWeekStartDate }));
+
+      return newWeekStartDate;
     },
   };
 }

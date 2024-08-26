@@ -13,8 +13,12 @@
   });
 
   function changeWeek(offset: number) {
-    const newWeekStart = new Date($rotaStore.currentWeekStart);
-    newWeekStart.setDate(newWeekStart.getDate() + offset * 7);
+    console.log("calling changeWeek(" + offset + ")");
+    const newWeekStart = rotaStore.changeWeek(
+      offset,
+      $rotaStore.currentWeekStart
+    );
+    console.log("new $rotaStore.newWeekStart: ", $rotaStore.newWeekStart);
     rotaStore.loadRota(newWeekStart);
   }
 
