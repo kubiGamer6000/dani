@@ -66,17 +66,25 @@ export function formatShiftTime(date: Date | Timestamp): string {
 
 export function calculateTotalHours(shifts: EditableShift[]): number {
   return shifts.reduce((total, shift) => {
-    const start =
-      shift.start_time instanceof Date
-        ? shift.start_time
-        : new Date(shift.start_time.seconds * 1000);
-    const end =
-      shift.end_time instanceof Date
-        ? shift.end_time
-        : new Date(shift.end_time.seconds * 1000);
-    const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    const start = getDateFromShiftTime(shift.start_time);
+    const end = getDateFromShiftTime(shift.end_time);
+    
+    let duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    
+    // Adjust for shifts spanning midnight
+    if (duration < 0) {
+      duration += 24;
+    }
+    
     return total + duration;
   }, 0);
+}
+
+function getDateFromShiftTime(time: Date | { seconds: number }): Date {
+  if (time instanceof Date) {
+    return time;
+  }
+  return new Date(time.seconds * 1000);
 }
 
 export function formatShift(shift: EditableShift): string {
