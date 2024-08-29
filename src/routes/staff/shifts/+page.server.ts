@@ -1,5 +1,5 @@
 import { notifUser } from "$lib/server/db/subscriptionDb";
-import { error, redirect } from "@sveltejs/kit";
+import { error, redirect, fail } from "@sveltejs/kit";
 import { adminDB, adminAuth } from "$lib/server/admin";
 import type { PageServerLoad, Actions } from "./$types";
 
@@ -25,7 +25,7 @@ export const actions = {
     // checkIns data //
 
     if (!locals?.uid) {
-      throw error(400, "Unauthorized");
+      throw error(400, "Unauthorized request");
     }
     const batch = adminDB.batch();
 

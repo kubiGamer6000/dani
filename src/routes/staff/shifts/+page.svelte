@@ -10,17 +10,22 @@
 
   import Check from "lucide-svelte/icons/check";
   import Loader from "lucide-svelte/icons/loader"; // Import loading icon
+  import TriangleAlert from "lucide-svelte/icons/triangle-alert";
 
   import { userData } from "$lib/firebase";
 
   import * as Card from "$lib/components/ui/card/index";
   import { Button } from "$lib/components/ui/button/index";
+  import * as Alert from "$lib/components/ui/alert";
 
   import CheckInTimer from "$lib/components/custom/CheckInTimer.svelte";
 
   import { getCurrentPosition } from "$lib/utils/getUserGeolocation";
+  import { page } from "$app/stores";
   // Add a loading state
   let isLoading = false;
+
+  let errorMsg = "";
 
   const handleEnhance: SubmitFunction = async ({
     formElement,
@@ -37,8 +42,12 @@
         formData.append("longitude", coords.longitude.toString());
       } catch (error) {
         console.error("Error getting location:", error);
+
+        errorMsg = "Error getting location. Have you allowed location access?";
         // Handle error (e.g., show error message to user)
         cancel();
+
+        isLoading = false;
       }
     };
 
@@ -50,6 +59,7 @@
         // Handle successful submission (e.g., show a success message)
       } else {
         // Handle error (e.g., show error message to user)
+        errorMsg = "Server error! Please try again later.";
       }
       await update();
     };
@@ -68,9 +78,9 @@
   <Card.Content>
     <CheckInTimer userData={$userData} />
   </Card.Content>
-  <Card.Footer>
-    <form method="post" use:enhance={handleEnhance}>
-      <Button type="submit" class="w-full" disabled={isLoading}>
+  <Card.Footer class="flex flex-col items-start">
+    <form method="post" use:enhance={handleEnhance} class="w-full">
+      <Button type="submit" class="w-full md:w-48" disabled={isLoading}>
         {#if isLoading}
           <Loader class="mr-2 h-4 w-4 animate-spin" />
           {$userData?.isCheckedIn ? "Checking out..." : "Checking in..."}
@@ -80,6 +90,17 @@
         {/if}
       </Button>
     </form>
+    {#if errorMsg}
+      <Alert.Root variant="destructive" class="mt-2">
+        <TriangleAlert class="h-4 w-4" />
+        <Alert.Title
+          >Error checking {$userData?.isCheckedIn ? "out" : "in"}</Alert.Title
+        >
+        <Alert.Description>
+          {errorMsg}
+        </Alert.Description>
+      </Alert.Root>
+    {/if}
   </Card.Footer>
 </Card.Root>
 
