@@ -91,7 +91,7 @@
       </Button>
     </form>
     {#if errorMsg}
-      <Alert.Root variant="destructive" class="mt-2">
+      <Alert.Root variant="destructive" class="mt-4">
         <TriangleAlert class="h-4 w-4" />
         <Alert.Title
           >Error checking {$userData?.isCheckedIn ? "out" : "in"}</Alert.Title

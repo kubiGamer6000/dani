@@ -4,7 +4,16 @@
   import * as Table from "$lib/components/ui/table";
   import { Button } from "$lib/components/ui/button/index.js";
 
-  import { collection, where, query, orderBy, limit } from "firebase/firestore";
+  import {
+    collection,
+    where,
+    query,
+    orderBy,
+    limit,
+    deleteDoc,
+    doc,
+    updateDoc,
+  } from "firebase/firestore";
 
   import { db } from "$lib/firebase";
 
@@ -17,6 +26,8 @@
   import CheckInTimer from "$lib/components/custom/CheckInTimer.svelte";
 
   import Map from "lucide-svelte/icons/map";
+  import Trash2 from "lucide-svelte/icons/trash-2";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog";
 
   const staffQuery = query(
     collection(db, "users"),
@@ -44,6 +55,39 @@
       window.open(link, "_blank", "noopener,noreferrer");
     } else {
       alert("Window is undefined");
+    }
+  };
+
+  const deleteCheckInGroup = async (shift, checkIn) => {
+    try {
+      const checkInRef = doc(db, "checkIns", checkIn?.in.id);
+      let checkOutRef = null;
+      if (checkIn.out.id) {
+        checkOutRef = doc(db, "checkIns", checkIn?.out.id);
+      }
+      const shiftRef = doc(db, "shifts", shift?.id);
+
+      // Delete the check-in from the database
+
+      await deleteDoc(checkInRef);
+
+      // If there is a check-out, delete it as well
+
+      if (checkOutRef) await deleteDoc(checkOutRef);
+
+      // Now, delete the check-in group from the shift. If there is only one check-in group, delete the whole shift
+
+      if (shift.checkIns.length > 1) {
+        await updateDoc(shiftRef, {
+          checkIns: shift.checkIns.filter(
+            (checkInGroup) => checkInGroup.in.id !== checkIn.in.id
+          ),
+        });
+      } else {
+        await deleteDoc(shiftRef);
+      }
+    } catch (error) {
+      console.error("Error deleting checkInGroup:", error);
     }
   };
 
@@ -94,14 +138,14 @@
             let:data={shifts}
           >
             {#if shifts.length !== 0}
+              <h3 class="font-semibold text-lg mt-4 mb-2">Shifts</h3>
               {#each shifts as shift}
-                <h3 class="font-semibold text-lg mt-4 mb-2">Shifts</h3>
                 <div class="py-2">
                   <h2 class="font-semibold text-lg">
                     {dayjs(shift.date).calendar(null, {
                       sameDay: "[Today]", // The same day ( Today at 2:30 AM )
                       lastDay: "[Yesterday]", // The day before ( Yesterday at 2:30 AM )
-                      lastWeek: "[Last] dddd", // Last week ( Last Monday at 2:30 AM )
+                      lastWeek: "dddd", // Last week ( Last Monday at 2:30 AM )
                       sameElse: "DD/MM/YYYY", // Everything else ( 7/10/2011 )
                     })}
                   </h2>
@@ -110,64 +154,115 @@
                       <Table.Row>
                         <Table.Head class="w-[100px]">Activity</Table.Head>
                         <Table.Head>When</Table.Head>
-                        <Table.Head class="text-right">Where</Table.Head>
+
+                        <Table.Head class="text-right">Options</Table.Head>
                       </Table.Row>
                     </Table.Header>
 
                     {#each shift?.checkIns as checkIn}
-                      <Table.Row>
-                        <Table.Cell class="font-medium flex items-center">
-                          Checked in
-                        </Table.Cell>
-                        <Table.Cell>
-                          {dayjs(checkIn.in.time.toDate()).format("H:mm")}
-                        </Table.Cell>
-                        <Table.Cell class="text-right">
-                          <Doc
-                            ref={`checkIns/${checkIn.in.id}`}
-                            let:data={checkInData}
-                          >
-                            <Button
-                              variant="outline"
-                              on:click={() => {
-                                openGoogleMapsLink(checkInData);
-                              }}
+                      <AlertDialog.Root>
+                        <Table.Row>
+                          <Table.Cell class="font-medium flex items-center">
+                            Checked in
+                          </Table.Cell>
+                          <Table.Cell>
+                            {dayjs(checkIn.in.time.toDate()).format("H:mm")}
+                          </Table.Cell>
+                          <Table.Cell class="text-right">
+                            <Doc
+                              ref={`checkIns/${checkIn.in.id}`}
+                              let:data={checkInData}
                             >
-                              <Map class="mr-2 h-4 w-4" />
-                              Open
-                            </Button>
-                          </Doc>
-                        </Table.Cell>
-                      </Table.Row>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                class="mr-1"
+                                on:click={() => {
+                                  openGoogleMapsLink(checkInData);
+                                }}
+                              >
+                                <Map class="h-4 w-4" />
+                              </Button>
+                              <AlertDialog.Trigger asChild let:builder>
+                                <Button
+                                  builders={[builder]}
+                                  variant="destructive"
+                                  size="icon"
+                                >
+                                  <Trash2 class="h-4 w-4" />
+                                </Button>
+                              </AlertDialog.Trigger>
+                            </Doc>
+                          </Table.Cell>
+                        </Table.Row>
 
-                      <Table.Row>
-                        <Table.Cell
-                          class="font-medium text-md flex items-center"
-                        >
-                          Checked out
-                        </Table.Cell>
-                        <Table.Cell>
-                          {checkIn.out.time != null
-                            ? dayjs(checkIn.out.time.toDate()).format("H:mm")
-                            : "Ongoing"}
-                        </Table.Cell>
-                        <Table.Cell class="text-right">
-                          <Doc
-                            ref={`checkIns/${checkIn.out.id}`}
-                            let:data={checkInData}
+                        <Table.Row>
+                          <Table.Cell
+                            class="font-medium text-md flex items-center"
                           >
-                            <Button
-                              variant="outline"
-                              on:click={() => {
-                                openGoogleMapsLink(checkInData);
-                              }}
+                            Checked out
+                          </Table.Cell>
+                          <Table.Cell>
+                            {checkIn.out.time != null
+                              ? dayjs(checkIn.out.time.toDate()).format("H:mm")
+                              : "Ongoing"}
+                          </Table.Cell>
+                          <Table.Cell class="text-right">
+                            <Doc
+                              ref={`checkIns/${checkIn.out.id}`}
+                              let:data={checkInData}
                             >
-                              <Map class="mr-2 h-4 w-4" />
-                              Open
-                            </Button>
-                          </Doc>
-                        </Table.Cell>
-                      </Table.Row>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                class="mr-1"
+                                on:click={() => {
+                                  openGoogleMapsLink(checkInData);
+                                }}
+                              >
+                                <Map class="h-4 w-4" />
+                              </Button>
+                            </Doc>
+                            <AlertDialog.Trigger asChild let:builder>
+                              <Button variant="destructive" size="icon">
+                                <Trash2 class="h-4 w-4" />
+                              </Button>
+                            </AlertDialog.Trigger>
+                            <AlertDialog.Content>
+                              <AlertDialog.Header>
+                                <AlertDialog.Title
+                                  >Are you sure you want to delete?</AlertDialog.Title
+                                >
+                                <AlertDialog.Description>
+                                  This will delete the shift between:
+                                  <span class="font-bold">
+                                    {dayjs(checkIn.in.time.toDate()).format(
+                                      "H:mm"
+                                    )}
+                                    -
+                                    {checkIn.out.time != null
+                                      ? dayjs(checkIn.out.time.toDate()).format(
+                                          "H:mm"
+                                        )
+                                      : "Ongoing"}
+                                  </span>
+                                </AlertDialog.Description>
+                              </AlertDialog.Header>
+                              <AlertDialog.Footer>
+                                <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+                                <AlertDialog.Action
+                                  on:click={() => {
+                                    deleteCheckInGroup(shift, checkIn);
+                                  }}
+                                >
+                                  <Trash2 class="mr-1 h-4 w-4" />
+                                  Delete
+                                </AlertDialog.Action>
+                              </AlertDialog.Footer>
+                            </AlertDialog.Content>
+                          </Table.Cell>
+                        </Table.Row>
+                      </AlertDialog.Root>
                     {/each}
                   </Table.Root>
                 </div>
