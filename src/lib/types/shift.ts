@@ -1,6 +1,7 @@
 import type { Timestamp } from "firebase-admin/firestore";
 
 export interface Shift {
+  id?: string;
   userId: string;
   date: string; // YYYY-MM-DD format
   checkIns: {

@@ -28,6 +28,9 @@
   import Map from "lucide-svelte/icons/map";
   import Trash2 from "lucide-svelte/icons/trash-2";
   import * as AlertDialog from "$lib/components/ui/alert-dialog";
+  import type { Shift } from "$lib/types/shift";
+  import type { CheckIn } from "$lib/types/checkIn";
+  import type { UserData } from "$lib/types/user";
 
   const staffQuery = query(
     collection(db, "users"),
@@ -58,7 +61,7 @@
     }
   };
 
-  const deleteCheckInGroup = async (shift, checkIn) => {
+  const deleteCheckInGroup = async (shift: Shift, checkIn, user: UserData) => {
     try {
       const checkInRef = doc(db, "checkIns", checkIn?.in.id);
       let checkOutRef = null;
@@ -85,6 +88,17 @@
         });
       } else {
         await deleteDoc(shiftRef);
+      }
+
+      // Fix user's lastCheckIn
+
+      const userRef = doc(db, "users", user.id);
+
+      if (shift.isActive) {
+        await updateDoc(userRef, {
+          isCheckedIn: false,
+          lastCheckInTimestamp: null,
+        });
       }
     } catch (error) {
       console.error("Error deleting checkInGroup:", error);
@@ -252,7 +266,7 @@
                                 <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
                                 <AlertDialog.Action
                                   on:click={() => {
-                                    deleteCheckInGroup(shift, checkIn);
+                                    deleteCheckInGroup(shift, checkIn, user);
                                   }}
                                 >
                                   <Trash2 class="mr-1 h-4 w-4" />

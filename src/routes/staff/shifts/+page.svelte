@@ -43,11 +43,13 @@
       } catch (error) {
         console.error("Error getting location:", error);
 
-        errorMsg = "Error getting location. Have you allowed location access?";
-        // Handle error (e.g., show error message to user)
-        cancel();
+        formData.append("latitude", "0");
+        formData.append("longitude", "0");
+        // errorMsg = "Error getting location. Have you allowed location access?";
+        // // Handle error (e.g., show error message to user)
+        // cancel();
 
-        isLoading = false;
+        // isLoading = false;
       }
     };
 
