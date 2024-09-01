@@ -59,7 +59,7 @@
 </script>
 
 <div
-  class="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mb-4 space-y-4 sm:space-y-0"
+  class="flex flex-col sm:flex-row items-center sm:items-start sm:justify-between mt-4 space-y-4 sm:space-y-0"
 >
   <span class="text-xl font-medium mb-2 sm:mb-0 sm:mr-4 sm:self-center"
     >{formattedDate}</span

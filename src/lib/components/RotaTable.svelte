@@ -299,6 +299,9 @@
               {#each days as day}
                 <Table.Head class="min-w-[100px]">
                   {day.slice(0, 3)}
+                  {dayjs(getDayOfWeek($rotaStore.newWeekStart, day)).format(
+                    "DD/MM"
+                  )}
                 </Table.Head>
               {/each}
               <Table.Head class="min-w-[80px]">Total</Table.Head>
