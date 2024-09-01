@@ -1,9 +1,13 @@
 <script lang="ts">
-
-
   import * as Card from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
   import { userData } from "$lib/firebase";
+  import { goto } from "$app/navigation";
+  import { onMount } from "svelte";
+
+  onMount(() => {
+    goto("/staff/shifts");
+  });
 </script>
 
 <main
@@ -21,5 +25,4 @@
     </Card.Content>
     <!-- <Card.Footer></Card.Footer> -->
   </Card.Root>
-
 </main>
