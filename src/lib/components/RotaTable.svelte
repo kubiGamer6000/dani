@@ -365,7 +365,7 @@
                     {:else}
                       <span class="text-muted-foreground">-</span>
                     {/if}
-                    <span class="text-primary italic">
+                    <span class="text-muted-foreground text-sm italic">
                       <br />
                       <Doc
                         ref={`shifts/${user.id}_${dayjs(
@@ -386,7 +386,7 @@
                 {/each}
 
                 <Table.Cell class="font-medium">
-                  {getUserTotalHours(user.id).toFixed(2)}
+                  {getUserTotalHours(user.id).toFixed(1).replace(".0", "")}h
                 </Table.Cell>
               </Table.Row>
             {/each}
