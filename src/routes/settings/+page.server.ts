@@ -11,7 +11,7 @@ export const actions: Actions = {
 
     console.log("Calling notifUser(", userId, ")");
 
-    await notifUser(userId, "Test notification");
+    await notifUser(userId, "Test notification", "nigga");
 
     return { status: "success" };
   },

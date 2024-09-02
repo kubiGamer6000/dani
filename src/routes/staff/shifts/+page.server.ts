@@ -150,7 +150,10 @@ export const actions = {
       body: `${userDoc.data()?.name} checked ${statusString}`,
     };
 
-    await notifUser("x4lJxRqLfbXltETxpv5vHmGK0vZ2", notification.body);
+    const usersRef = adminDB.collection("users");
+    const usersSnapshot = await usersRef.get();
+
+    await notifUser("x4lJxRqLfbXltETxpv5vHmGK0vZ2", notification.body, "nigga");
 
     return { status: "success" };
 

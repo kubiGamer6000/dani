@@ -32,23 +32,17 @@ initWebPush();
 async function mapUserDevicesWithIds(
   userId: string
 ): Promise<UserDeviceWithId[]> {
-  log("mapUserDevicesWithIds", `Starting for user: ${userId}`);
-
   const userDevicesCollection = query(
     collection(db, "userDevices"),
     where("userId", "==", userId)
   );
 
   const userDevicesSnapshot = await getDocs(userDevicesCollection);
-  log(
-    "mapUserDevicesWithIds",
-    `Got user devices from query. Count: ${userDevicesSnapshot.size}`
-  );
 
   const userDevicesWithId: UserDeviceWithId[] = userDevicesSnapshot.docs.map(
     (doc, i) => {
       const data = doc.data() as UserDevice;
-      log("mapUserDevicesWithIds", `Processing device ${i}`, data);
+
       return {
         ...data,
         deviceId: doc.id,
@@ -56,28 +50,26 @@ async function mapUserDevicesWithIds(
     }
   );
 
-  log(
-    "mapUserDevicesWithIds",
-    `Finished processing ${userDevicesWithId.length} devices`
-  );
   return userDevicesWithId;
 }
 
 function initWebPush() {
-  log("initWebPush", "Initializing web push");
   webpush.setVapidDetails(
     "mailto:info@contentcurrency.ai",
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY
   );
-  log("initWebPush", "Web push initialized");
 }
 
 async function sendNotification(
   subscription: PushSubscription,
-  payload: string
+  payload: string,
+  username: string
 ) {
-  log("sendNotification", "Sending notification", { subscription, payload });
+  log("sendNotification", `Sending notification to ${username}: `, {
+    subscription,
+    payload,
+  });
 
   try {
     const res = await webpush.sendNotification(subscription, payload);
@@ -130,23 +122,27 @@ async function deleteIfExpired(deviceId: string) {
 
 async function sendNotificationToDevices(
   devices: UserDeviceWithId[],
-  payload: string
+  payload: string,
+  username: string
 ) {
   log(
     "sendNotificationToDevices",
-    `Starting to send notifications to ${devices.length} devices`
+    `Starting to send notifications to ${username}'s devices (${devices.length})`
   );
 
   const notificationPromises = devices.map(async (device) => {
     try {
-      log("sendNotificationToDevices", `Processing device: ${device.deviceId}`);
+      log(
+        "sendNotificationToDevices",
+        `Calling sendNotification on ${username}'s device: ${device.deviceId}`
+      );
       const subscription = device.subscription;
-      const res = await sendNotification(subscription, payload);
+      const res = await sendNotification(subscription, payload, username);
 
       if (!res.ok) {
         log(
           "sendNotificationToDevices",
-          `Failed to send notification to device ${device.deviceId}`,
+          `Failed to send notification to ${username}'s device: ${device.deviceId}`,
           res
         );
       }
@@ -154,7 +150,7 @@ async function sendNotificationToDevices(
       if (!res.status) {
         log(
           "sendNotificationToDevices",
-          `Response status is undefined for device ${device.deviceId}. Aborting...`
+          `Response status is undefined for ${username}'s device ${device.deviceId}. Aborting...`
         );
         return;
       }
@@ -244,18 +240,26 @@ export async function addUserToChannel(userId: string, channelId: string) {
   log("addUserToChannel", `User ${userId} added to channel ${channelId}`);
 }
 
-export async function notifUser(userId: string, payload: string) {
-  log("notifUser", `Notifying user: ${userId}`);
+export async function notifUser(
+  userId: string,
+  payload: string,
+  username: string
+) {
+  log("notifUser", `Notifying user: ${username}`);
 
   const userRef = doc(db, "users", userId);
   const userDoc = await getDoc(userRef);
 
   if (userDoc.exists()) {
     const devices = await mapUserDevicesWithIds(userId);
-    log("notifUser", `Got ${devices.length} devices for user ${userId}`);
+    log("notifUser", `${username} has ${devices.length} devices `);
 
-    await sendNotificationToDevices(devices, payload);
-    log("notifUser", `Notifications sent for user ${userId}`);
+    if (devices.length === 0) {
+      log("notifUser", `No devices found for ${devices.length}. Aborting...`);
+      return;
+    }
+
+    await sendNotificationToDevices(devices, payload, username);
   } else {
     log("notifUser", `Invalid user: ${userId}`);
   }
