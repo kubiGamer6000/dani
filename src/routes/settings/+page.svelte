@@ -1,20 +1,30 @@
 <script lang="ts">
   import { user } from "$lib/firebase";
-
   import { onMount } from "svelte";
-
   import { Button } from "$lib/components/ui/button/index";
   import * as Card from "$lib/components/ui/card/index";
   import { goto } from "$app/navigation";
+  import { page } from "$app/stores";
+  import { enhance } from "$app/forms";
+
+  // Custom logging function
+  function log(message: string, data?: any) {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [Settings] ${message}`);
+    if (data) console.log(JSON.stringify(data, null, 2));
+  }
 
   let notifPermGranted: boolean | null = null;
   let isSubscribed = false;
 
   onMount(async () => {
+    log("Component mounted");
     notifPermGranted = Notification.permission === "granted";
+    log(`Notification permission status: ${notifPermGranted}`);
 
     if (notifPermGranted) {
       isSubscribed = await checkSubscriptionStatus();
+      log(`User subscription status: ${isSubscribed}`);
 
       if (!isSubscribed) {
         await subscribeUser();
@@ -23,14 +33,18 @@
   });
 
   function requestNotificationPermission() {
-    Notification.requestPermission().then((permission) => {
+    log("Requesting notification permission");
+    Notification.requestPermission().then(async (permission) => {
+      log(`Notification permission result: ${permission}`);
       if (permission === "granted") {
         notifPermGranted = true;
+        await subscribeUser();
       }
     });
   }
 
   async function sendSubscriptonToServer(subscription: PushSubscription) {
+    log("Sending subscription to server", subscription);
     try {
       const res = await fetch("/api/addSubscription", {
         method: "POST",
@@ -39,36 +53,41 @@
         },
         body: JSON.stringify({ subscription }),
       });
-      if (!res.ok)
+      if (!res.ok) {
         throw new Error(
           `Error saving subscription on server: ${res.statusText} (${res.status})`
         );
+      }
+      log("Subscription successfully sent to server");
     } catch (error) {
-      console.error("Error sending subscription to server:", error);
+      log("Error sending subscription to server", error);
       unsubscribe();
     }
   }
 
   async function checkSubscriptionStatus() {
+    log("Checking subscription status");
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
-      console.log("Push subscription checked:", JSON.stringify(subscription));
+      log("Push subscription checked", subscription);
       const exists = subscription !== null;
       if (exists) {
         sendSubscriptonToServer(subscription);
       }
+      return exists;
     }
+    log("Service worker not supported");
     return false;
   }
 
   async function subscribeUser() {
+    log("Attempting to subscribe user");
     if ("serviceWorker" in navigator) {
       try {
-        console.log("trying to subscribe");
         const res = await fetch("/api/vapidPubKey");
         const { data } = await res.json();
-        console.log(data);
+        log("Received VAPID public key", data);
 
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.subscribe({
@@ -76,26 +95,30 @@
           applicationServerKey: data,
         });
         isSubscribed = true;
-        console.log("Push subscription:", JSON.stringify(subscription));
+        log("Push subscription created", subscription);
         sendSubscriptonToServer(subscription);
       } catch (error) {
-        console.error("Error subscribing user to push notifications:", error);
+        log("Error subscribing user to push notifications", error);
       }
+    } else {
+      log("Service worker not supported");
     }
   }
 
   async function unsubscribe() {
+    log("Attempting to unsubscribe user");
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
         await subscription.unsubscribe();
-        console.log(
-          "Push subscription unsubscribed:",
-          JSON.stringify(subscription)
-        );
+        log("Push subscription unsubscribed", subscription);
         isSubscribed = false;
+      } else {
+        log("No subscription found to unsubscribe");
       }
+    } else {
+      log("Service worker not supported");
     }
   }
 </script>
@@ -105,12 +128,12 @@
     <h1 class="text-4xl w-full font-semibold p-4 mb-4">Settings</h1>
     <Card.Root>
       <Card.Header>
-        <Card.Title class="text-3xl">Push Notifications</Card.Title>
-        <Card.Description class="text-md"
+        <Card.Title>Push Notifications</Card.Title>
+        <Card.Description
           >Enable/disable push notifications from here...</Card.Description
         >
       </Card.Header>
-      <Card.Content>
+      <Card.Content class="flex flex-col gap-4">
         {#if notifPermGranted === null}
           <p>Checking permissions...</p>
         {:else if notifPermGranted === false}
@@ -118,24 +141,29 @@
             Enable notifications
           </Button>
         {:else}
-          <p class="mb-4 text-lg">
-            You are <span class="font-semibold"
-              >{isSubscribed ? "subscribed" : "not subscribed"}</span
-            > to push notifications.
+          <p>
+            You are <span class="font-semibold">
+              {isSubscribed ? "subscribed" : "not subscribed"}
+            </span> to push notifications.
           </p>
           {#if isSubscribed}
-            <Button class="w-full" variant="outline" on:click={unsubscribe}
+            <Button class="w-full" variant="destructive" on:click={unsubscribe}
               >Unsubscribe</Button
             >
-            <form method="post" action="?/testNotification">
-              <Button class="w-full mt-4" type="submit" variant="secondary"
-                >Test Notification</Button
-              >
+            <form method="post" action="?/testNotification" use:enhance>
+              <Button class="w-full" type="submit" variant="outline">
+                Test Notification
+              </Button>
             </form>
           {/if}
         {/if}
-        <Button class="w-full mt-4" variant="outline" on:click={() => goto("/")}
-          >Go To Home</Button
+        <Button
+          class="w-full"
+          variant="outline"
+          on:click={() => {
+            const redirectTo = $page.url.searchParams.get("redirectTo") || "/";
+            goto(`/${redirectTo.slice(1)}`);
+          }}>Go back</Button
         >
       </Card.Content>
     </Card.Root>

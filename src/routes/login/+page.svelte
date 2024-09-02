@@ -111,8 +111,8 @@
           >
         </div>
       </SignedIn>
-      <SignedOut
-        ><form on:submit|preventDefault={signInWithEmail} class="grid gap-4">
+      <SignedOut>
+        <form on:submit|preventDefault={signInWithEmail} class="grid gap-4">
           <div class="grid gap-2">
             <Label for="email">Email</Label>
             <Input
@@ -159,8 +159,8 @@
         <div class="mt-4 text-center text-sm">
           Don&apos;t have an account?
           <a href="/signup" class="underline">Sign up</a>
-        </div></SignedOut
-      >
+        </div>
+      </SignedOut>
     </Card.Content>
   </Card.Root>
 </main>

@@ -16,6 +16,7 @@
   import { Button } from "$lib/components/ui/button/index.ts";
   import * as Sheet from "$lib/components/ui/sheet/index.ts";
   import AnimatedRoute from "$lib/components/custom/AnimatedRoute.svelte";
+  import { Settings } from "lucide-svelte";
 
   let open = false;
   $: if ($navigating) open = false;
@@ -67,6 +68,13 @@
           >
             <CalendarRange class="h-4 w-4" />
             Rota
+          </a>
+          <a
+            href={`/settings?redirectTo=${$page.url.pathname}`}
+            class={`text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all`}
+          >
+            <Settings class="h-4 w-4" />
+            Settings
           </a>
         </nav>
       </div>
@@ -124,6 +132,13 @@
             >
               <CalendarRange class="h-5 w-5" />
               Rota
+            </a>
+            <a
+              href={`/settings?redirectTo=${$page.url.pathname}`}
+              class={"bg-background text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"}
+            >
+              <Settings class="h-5 w-5" />
+              Settings
             </a>
           </nav>
         </Sheet.Content>

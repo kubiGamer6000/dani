@@ -1,4 +1,4 @@
-import { adminAuth } from "$lib/server/admin";
+import { adminAuth, adminDB } from "$lib/server/admin";
 import { redirect, type Handle } from "@sveltejs/kit";
 
 export const handle = (async ({ event, resolve }) => {
@@ -12,6 +12,20 @@ export const handle = (async ({ event, resolve }) => {
   }
 
   console.log("Hook function running...");
+
+  if (event.url.pathname == "/") {
+    if (event.locals.uid) {
+      const userDoc = await adminDB.doc(`users/${event.locals.uid}`).get();
+      const userData = userDoc.data();
+      if (userData !== undefined) {
+        if (userData.role == "staff") {
+          throw redirect(302, "/staff");
+        } else if (userData.role == "admin") {
+          throw redirect(302, "/admin");
+        }
+      }
+    }
+  }
 
   if (
     event.url.pathname.startsWith("/staff") ||
