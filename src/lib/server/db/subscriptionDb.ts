@@ -1,97 +1,51 @@
 import { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } from "$env/static/private";
-import { db } from "$lib/firebase";
-import {
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  deleteDoc,
-  arrayUnion,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  Timestamp,
-  limit,
-  orderBy,
-} from "firebase/firestore";
+import { adminDB } from "../admin";
 import webpush, { type PushSubscription } from "web-push";
 import type { UserDevice } from "$lib/types/userDevices";
 import type { NotificationPayload } from "$lib/types/notifPayload";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
-// Custom logging function
-function log(functionName: string, message: string, data?: any) {
-  const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] [${functionName}] ${message}`);
-  if (data) console.log(JSON.stringify(data, null, 2));
-}
-
+// Initialize web push with VAPID keys
 initWebPush();
 
+// Fetch user devices with their IDs
 async function mapUserDevicesWithIds(
   userId: string
 ): Promise<UserDeviceWithId[]> {
-  log("mapUserDevicesWithIds", `Starting for user: ${userId}`);
+  const userDevicesCollection = adminDB
+    .collection("users")
+    .doc(userId)
+    .collection("devices");
+  const userDevicesSnapshot = await userDevicesCollection.get();
 
-  const userDevicesCollection = query(
-    collection(db, "userDevices"),
-    where("userId", "==", userId)
-  );
-
-  const userDevicesSnapshot = await getDocs(userDevicesCollection);
-  log(
-    "mapUserDevicesWithIds",
-    `Got user devices from query. Count: ${userDevicesSnapshot.size}`
-  );
-
-  const userDevicesWithId: UserDeviceWithId[] = userDevicesSnapshot.docs.map(
-    (doc, i) => {
-      const data = doc.data() as UserDevice;
-      log("mapUserDevicesWithIds", `Processing device ${i}`, data);
-      return {
-        ...data,
-        deviceId: doc.id,
-      };
-    }
-  );
-
-  log(
-    "mapUserDevicesWithIds",
-    `Finished processing ${userDevicesWithId.length} devices`
-  );
-  return userDevicesWithId;
+  return userDevicesSnapshot.docs.map((doc) => ({
+    ...(doc.data() as UserDevice),
+    deviceId: doc.id,
+  }));
 }
 
+// Initialize web push with VAPID keys
 function initWebPush() {
-  log("initWebPush", "Initializing web push");
   webpush.setVapidDetails(
     "mailto:info@contentcurrency.ai",
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY
   );
-  log("initWebPush", "Web push initialized");
 }
 
+// Send a notification to a specific subscription
 async function sendNotification(
   subscription: PushSubscription,
   payload: string
 ) {
-  log("sendNotification", "Sending notification", { subscription, payload });
-
   try {
     const res = await webpush.sendNotification(subscription, payload);
-    log("sendNotification", "Notification sent", {
-      statusCode: res.statusCode,
-      body: res.body,
-    });
     return {
       ok: res.statusCode === 201,
       status: res.statusCode,
       body: res.body,
     };
   } catch (err) {
-    log("sendNotification", "Error sending notification", err);
     return {
       ok: false,
       status: undefined,
@@ -100,184 +54,109 @@ async function sendNotification(
   }
 }
 
+// Delete a device if it has failed to receive notifications multiple times
 async function deleteIfExpired(deviceId: string) {
-  log("deleteIfExpired", `Checking device: ${deviceId}`);
+  const q = adminDB
+    .collection("notif_log")
+    .where("device_id", "==", deviceId)
+    .where("success", "==", false)
+    .orderBy("created_at", "desc")
+    .limit(3);
+  const last3success = await q.get();
 
-  try {
-    const q = query(
-      collection(db, "notif_log"),
-      where("device_id", "==", deviceId),
-      where("success", "==", false),
-      orderBy("created_at", "desc"),
-      limit(3)
-    );
-    const last3success = await getDocs(q);
-
-    if (last3success.size >= 3) {
-      const deviceRef = doc(db, "userDevices", deviceId);
-      await deleteDoc(deviceRef);
-      log("deleteIfExpired", `Deleted device: ${deviceId}`);
-    } else {
-      log(
-        "deleteIfExpired",
-        `Device ${deviceId} not deleted. Failed notifications: ${last3success.size}`
-      );
-    }
-  } catch (err) {
-    log("deleteIfExpired", `Error deleting device: ${deviceId}`, err);
+  if (last3success.size >= 3) {
+    const deviceRef = adminDB.collection("userDevices").doc(deviceId);
+    await deviceRef.delete();
   }
 }
 
+// Send notifications to multiple devices
 async function sendNotificationToDevices(
   devices: UserDeviceWithId[],
   payload: string
 ) {
-  log(
-    "sendNotificationToDevices",
-    `Starting to send notifications to ${devices.length} devices`
-  );
-
   const notificationPromises = devices.map(async (device) => {
-    try {
-      log("sendNotificationToDevices", `Processing device: ${device.deviceId}`);
-      const subscription = device.subscription;
-      const res = await sendNotification(subscription, payload);
+    const res = await sendNotification(device.subscription, payload);
 
-      if (!res.ok) {
-        log(
-          "sendNotificationToDevices",
-          `Failed to send notification to device ${device.deviceId}`,
-          res
-        );
-      }
+    // Log the notification attempt
+    await adminDB.collection("notif_log").add({
+      device_id: device.deviceId,
+      payload,
+      http_status_response: res?.status,
+      success: res.ok,
+      error_message: res.body,
+      created_at: Timestamp.now(),
+    });
 
-      if (!res.status) {
-        log(
-          "sendNotificationToDevices",
-          `Response status is undefined for device ${device.deviceId}. Aborting...`
-        );
-        return;
-      }
-
-      await addDoc(collection(db, "notif_log"), {
-        device_id: device.deviceId,
-        payload,
-        http_status_response: res?.status,
-        success: res.ok,
-        error_message: res.body,
-        created_at: Timestamp.now(),
-      });
-      log(
-        "sendNotificationToDevices",
-        `Logged notification for device ${device.deviceId}`
-      );
-
-      if (res.status === 410) {
-        log(
-          "sendNotificationToDevices",
-          `Subscription expired for device ${device.deviceId}. Deleting...`
-        );
-        await deleteIfExpired(device.deviceId);
-      } else if (!res.ok) {
-        log(
-          "sendNotificationToDevices",
-          `Notification failed for device ${device.deviceId}. Checking for expiration...`
-        );
-        await deleteIfExpired(device.deviceId);
-      }
-    } catch (error) {
-      log(
-        "sendNotificationToDevices",
-        `Error processing device ${device.deviceId}`,
-        error
-      );
+    // Check if the device needs to be deleted
+    if (res.status === 410 || !res.ok) {
+      await deleteIfExpired(device.deviceId);
     }
   });
 
   await Promise.all(notificationPromises);
-  log(
-    "sendNotificationToDevices",
-    "Finished sending notifications to all devices"
-  );
 }
 
+// Add or update a user's device
 export async function addUserDevice(
   userId: string,
   subscription: PushSubscription
 ) {
-  log("addUserDevice", `Adding device for user: ${userId}`);
+  const userDevicesRef = adminDB
+    .collection("users")
+    .doc(userId)
+    .collection("devices");
+  const q = userDevicesRef.where("endpoint", "==", subscription.endpoint);
+  const sameDevice = await q.get();
 
-  const devicesRef = collection(db, "userDevices");
-  const q = query(devicesRef, where("endpoint", "==", subscription.endpoint));
-  const sameDevice = await getDocs(q);
-
-  if (sameDevice.docs.length != 0) {
-    log(
-      "addUserDevice",
-      "Device with same subscription already exists. Aborting."
-    );
+  if (!sameDevice.empty) {
+    await sameDevice.docs[0].ref.update({ subscription });
     return;
   }
 
   const deviceData: UserDevice = {
+    userId: userId,
     endpoint: subscription.endpoint,
     subscription: subscription,
-    userId,
   };
 
-  await addDoc(devicesRef, deviceData);
-  log("addUserDevice", "Device added successfully");
+  await userDevicesRef.add(deviceData);
 }
 
-export async function addUserToChannel(userId: string, channelId: string) {
-  log("addUserToChannel", `Adding user ${userId} to channel ${channelId}`);
+// TODO: Implement addUserToChannel function
+// export async function addUserToChannel(userId: string, channelId: string) {
+//   // Implementation here
+// }
 
-  const channelRef = doc(db, "notif_channels", channelId);
-  const channelDoc = await getDoc(channelRef);
-
-  if (!channelDoc.exists()) {
-    await setDoc(channelRef, { createdAt: Timestamp.now(), users: [] });
-    log("addUserToChannel", `Created new channel: ${channelId}`);
-  }
-
-  await updateDoc(channelRef, { users: arrayUnion(userId) });
-  log("addUserToChannel", `User ${userId} added to channel ${channelId}`);
-}
-
+// Send a notification to a specific user
 export async function notifUser(userId: string, payload: string) {
-  log("notifUser", `Notifying user: ${userId}`);
+  const userRef = adminDB.collection("users").doc(userId);
+  const userDoc = await userRef.get();
 
-  const userRef = doc(db, "users", userId);
-  const userDoc = await getDoc(userRef);
-
-  if (userDoc.exists()) {
+  if (userDoc.exists) {
     const devices = await mapUserDevicesWithIds(userId);
-    log("notifUser", `Got ${devices.length} devices for user ${userId}`);
-
     await sendNotificationToDevices(devices, payload);
-    log("notifUser", `Notifications sent for user ${userId}`);
-  } else {
-    log("notifUser", `Invalid user: ${userId}`);
   }
 }
 
+// Interface for a user device with its ID
 interface UserDeviceWithId extends UserDevice {
   deviceId: string;
 }
 
-function notifPayloadToString(input: { title: string; body: string }): string {
-  log(
-    "notifPayloadToString",
-    "Converting notification payload to string",
-    input
-  );
+// Send a notification to all users
+export async function notifyAllUsers(payload: string) {
+  const usersRef = adminDB.collection("users");
+  const userDocs = await usersRef.get();
 
-  const separator = "##";
-  const defaultTitle = "Dani's Catering";
-
-  if (input.title && input.title !== defaultTitle) {
-    return `${input.title.trim()} ${separator} ${input.body.trim()}`;
-  } else {
-    return input.body.trim();
+  for (const userDoc of userDocs.docs) {
+    const userId = userDoc.id;
+    const devices = await mapUserDevicesWithIds(userId);
+    await sendNotificationToDevices(devices, payload);
   }
 }
+
+// TODO: Implement a function to handle notification preferences
+// TODO: Add error handling and retries for failed notifications
+// TODO: Implement a rate limiting mechanism to prevent spam
+// TODO: Add a function to clean up old notification logs

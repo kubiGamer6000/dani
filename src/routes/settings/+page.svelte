@@ -61,7 +61,7 @@
       log("Subscription successfully sent to server");
     } catch (error) {
       log("Error sending subscription to server", error);
-      unsubscribe();
+      await unsubscribe();
     }
   }
 
@@ -73,7 +73,7 @@
       log("Push subscription checked", subscription);
       const exists = subscription !== null;
       if (exists) {
-        sendSubscriptonToServer(subscription);
+        await sendSubscriptonToServer(subscription);
       }
       return exists;
     }
@@ -155,6 +155,8 @@
                 Test Notification
               </Button>
             </form>
+          {:else}
+            <Button class="w-full" on:click={subscribeUser}>Subscribe</Button>
           {/if}
         {/if}
         <Button
