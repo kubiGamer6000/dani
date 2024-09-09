@@ -1,7 +1,5 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { db } from "$lib/firebase";
-  import { doc, getDoc } from "firebase/firestore";
   import type { DocumentData, Timestamp } from "firebase/firestore";
   import type { UserData } from "$lib/types/user";
 
@@ -9,35 +7,14 @@
 
   let elapsedTime = "00:00:00";
   let intervalId: number | null = null;
-  let lastCheckInTime: Date | null = null;
 
   $: isCheckedIn = userData?.isCheckedIn ?? false;
-  $: lastCheckIn = userData?.lastCheckIn ?? null;
-  $: lastCheckInTimestamp = userData?.lastCheckInTimestamp ?? null;
-
-  async function fetchLastCheckIn() {
-    if (!lastCheckIn) return;
-
-    try {
-      const checkInRef = doc(db, "checkIns", lastCheckIn);
-      const checkInSnap = await getDoc(checkInRef);
-
-      if (checkInSnap.exists()) {
-        const checkInData = checkInSnap.data();
-        if (checkInData.timestamp) {
-          lastCheckInTime = (checkInData.timestamp as Timestamp).toDate();
-          updateElapsedTime();
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching last check-in:", error);
-    }
-  }
+  $: lastCheckInTimestamp = userData?.lastCheckInTimestamp as Timestamp | null;
 
   function updateElapsedTime() {
-    if (lastCheckInTime) {
+    if (lastCheckInTimestamp) {
       const now = new Date();
-      const diff = now.getTime() - lastCheckInTime.getTime();
+      const diff = now.getTime() - lastCheckInTimestamp.toDate().getTime();
 
       const hours = Math.floor(diff / 3600000);
       const minutes = Math.floor((diff % 3600000) / 60000);
@@ -51,6 +28,7 @@
 
   function startTimer() {
     if (!intervalId) {
+      updateElapsedTime(); // Update immediately
       intervalId = window.setInterval(updateElapsedTime, 1000);
     }
   }
@@ -63,17 +41,11 @@
   }
 
   $: {
-    if (isCheckedIn && lastCheckIn) {
-      if (!lastCheckInTime) {
-        fetchLastCheckIn();
-      }
-      if (!intervalId) {
-        startTimer();
-      }
+    if (isCheckedIn && lastCheckInTimestamp) {
+      startTimer();
     } else {
       stopTimer();
       elapsedTime = "00:00:00";
-      lastCheckInTime = null;
     }
   }
 

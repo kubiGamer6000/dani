@@ -3,10 +3,18 @@
   import { Button } from "$lib/components/ui/button";
   import { userData } from "$lib/firebase";
   import { goto } from "$app/navigation";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
+
+  import { page } from "$app/stores";
+
+  $: console.log("Current route:", $page.url.pathname);
 
   onMount(() => {
-    goto("/staff/shifts");
+    console.log("Mounted:", $page.url.pathname);
+  });
+
+  onDestroy(() => {
+    console.log("Destroyed:", $page.url.pathname);
   });
 </script>
 

@@ -19,7 +19,7 @@ export const handle = (async ({ event, resolve }) => {
       const userData = userDoc.data();
       if (userData !== undefined) {
         if (userData.role == "staff") {
-          throw redirect(302, "/staff");
+          throw redirect(302, "/staff/shifts");
         } else if (userData.role == "admin") {
           throw redirect(302, "/admin");
         }

@@ -14,6 +14,19 @@
   import dayjs from "dayjs";
   import { getStartOfWeek, formatShift } from "$lib/utils/rotaUtils";
 
+  import { onMount, onDestroy } from "svelte";
+  import { page } from "$app/stores";
+
+  $: console.log("Current route:", $page.url.pathname);
+
+  onMount(() => {
+    console.log("Mounted:", $page.url.pathname);
+  });
+
+  onDestroy(() => {
+    console.log("Destroyed:", $page.url.pathname);
+  });
+
   type DayOfWeek =
     | "Monday"
     | "Tuesday"

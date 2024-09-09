@@ -9,6 +9,14 @@
 
   import { onMount } from "svelte";
 
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      for (let registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+
   async function detectSWUpdate() {
     const registration = await navigator.serviceWorker.ready;
 
@@ -18,7 +26,7 @@
       newWorker?.addEventListener("statechange", () => {
         if (newWorker.state === "installed") {
           if (navigator.serviceWorker.controller) {
-            if (confirm("New update available! Please refresh.")) {
+            if (confirm("App update available. Refresh?")) {
               newWorker.postMessage({ type: "SKIP_WAITING" });
               window.location.reload();
             }

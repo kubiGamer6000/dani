@@ -19,6 +19,18 @@
 
   let open = false;
   $: if ($navigating) open = false;
+
+  import { onMount, onDestroy } from "svelte";
+
+  $: console.log("Current route:", $page.url.pathname);
+
+  onMount(() => {
+    console.log("Mounted:", $page.url.pathname);
+  });
+
+  onDestroy(() => {
+    console.log("Destroyed:", $page.url.pathname);
+  });
 </script>
 
 <div

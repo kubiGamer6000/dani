@@ -8,9 +8,9 @@
     formatShift,
   } from "$lib/utils/rotaUtils";
 
-  import type { EditableShift, User } from "$lib/types/rotaTypes";
+  import type { EditableShift } from "$lib/types/rotaTypes";
 
-  import { createEventDispatcher, onMount, afterUpdate } from "svelte";
+  import { onMount } from "svelte";
 
   import * as Table from "$lib/components/ui/table";
   import { Input } from "$lib/components/ui/input";
@@ -28,7 +28,7 @@
   import { fade, fly } from "svelte/transition";
 
   import { get } from "svelte/store";
-  import { Collection, Doc } from "sveltefire";
+  import { Doc } from "sveltefire";
 
   import dayjs from "dayjs";
 
@@ -304,7 +304,7 @@
                   )}
                 </Table.Head>
               {/each}
-              <Table.Head class="min-w-[80px]">Total</Table.Head>
+              <Table.Head class="min-w-[80px]">Total Time</Table.Head>
             </Table.Row>
           </Table.Header>
 
@@ -368,17 +368,25 @@
                     <span class="text-muted-foreground text-sm italic">
                       <br />
                       <Doc
-                        ref={`shifts/${user.id}_${dayjs(
+                        ref={`dailyShifts/${user.id}_${dayjs(
                           getDayOfWeek($rotaStore.newWeekStart, day)
-                        ).format("YYYY-MM-DD")}`}
+                        ).format("DD-MM-YYYY")}`}
                         let:data={shift}
                       >
-                        {#each shift.checkIns as checkIn}
-                          {#if checkIn.out.time}
-                            {`${dayjs(checkIn.in.time.toDate()).format("HH:mm")} - ${dayjs(checkIn.out.time.toDate()).format("HH:MM")} `}
-                          {:else}
-                            {`${dayjs(checkIn.in.time.toDate()).format("HH:mm")} - Ongoing.. `}
-                          {/if}
+                        {#each shift.checkIns as checkInId}
+                          <Doc
+                            ref={`dailyShifts/${user.id}_${dayjs(
+                              getDayOfWeek($rotaStore.newWeekStart, day)
+                            ).format("DD-MM-YYYY")}/checkIns/${checkInId}`}
+                            let:data={checkIn}
+                          >
+                            {#if checkIn.end.timestamp}
+                              {`${dayjs(checkIn.start.timestamp.toDate()).format("HH:mm")} - ${dayjs(checkIn.end.timestamp.toDate()).format("HH:mm")} `}
+                            {:else}
+                              {`Checked in at ${dayjs(checkIn.start.timestamp.toDate()).format("HH:mm")}`}
+                            {/if}
+                          </Doc>
+                          <br />
                         {/each}
                       </Doc>
                     </span>
@@ -386,7 +394,7 @@
                 {/each}
 
                 <Table.Cell class="font-medium">
-                  {getUserTotalHours(user.id).toFixed(1).replace(".0", "")}h
+                  {getUserTotalHours(user.id).toFixed(2).replace(".00", "")}h
                 </Table.Cell>
               </Table.Row>
             {/each}
