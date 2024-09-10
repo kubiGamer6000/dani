@@ -25,11 +25,12 @@
     <Card.Header>
       <Card.Title class="text-3xl">Hey, {$userData?.name}</Card.Title>
       <Card.Description class="text-lg">
-        Welcome to the Dani's Catering app!
+        Welcome to the Dani's Catering app! This section is still under
+        construction.
       </Card.Description>
     </Card.Header>
     <Card.Content>
-      <Button class="w-full">Go to app</Button>
+      <Button class="w-full" href="/staff/shifts">Go to check-in</Button>
     </Card.Content>
     <!-- <Card.Footer></Card.Footer> -->
   </Card.Root>

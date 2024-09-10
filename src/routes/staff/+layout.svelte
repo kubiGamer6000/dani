@@ -21,6 +21,7 @@
   $: if ($navigating) open = false;
 
   import { onMount, onDestroy } from "svelte";
+  import { Settings } from "lucide-svelte";
 
   $: console.log("Current route:", $page.url.pathname);
 
@@ -76,6 +77,13 @@
             <Users class="h-4 w-4" />
             Check-ins
           </a>
+          <a
+            href={`/settings?redirectTo=${$page.url.pathname}`}
+            class={`text-muted-foreground hover:text-primary flex items-center gap-3 rounded-lg px-3 py-2 transition-all`}
+          >
+            <Settings class="h-4 w-4" />
+            Settings
+          </a>
         </nav>
       </div>
     </div>
@@ -128,6 +136,13 @@
             >
               <Users class="h-5 w-5" />
               Check-ins
+            </a>
+            <a
+              href={`/settings?redirectTo=${$page.url.pathname}`}
+              class={"bg-background text-muted-foreground hover:text-foreground mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2"}
+            >
+              <Settings class="h-5 w-5" />
+              Settings
             </a>
           </nav>
         </Sheet.Content>
