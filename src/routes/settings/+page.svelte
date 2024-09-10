@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { user } from "$lib/firebase";
+  import { user, auth } from "$lib/firebase";
   import { onMount } from "svelte";
   import { Button } from "$lib/components/ui/button/index";
   import * as Card from "$lib/components/ui/card/index";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { enhance } from "$app/forms";
+
+  import { signOut } from "firebase/auth";
 
   // Custom logging function
   function log(message: string, data?: any) {
@@ -166,6 +168,14 @@
             const redirectTo = $page.url.searchParams.get("redirectTo") || "/";
             goto(`/${redirectTo.slice(1)}`);
           }}>Go back</Button
+        >
+        <Button
+          class="w-full"
+          variant="destructive"
+          on:click={async () => {
+            const res = await fetch("/api/signin", { method: "DELETE" });
+            await signOut(auth);
+          }}>Log out</Button
         >
       </Card.Content>
     </Card.Root>
