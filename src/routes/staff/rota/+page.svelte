@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { db, user, userData } from "$lib/firebase";
+  import { db, user } from "$lib/firebase";
 
-  import { Doc, Collection } from "sveltefire";
+  import { Collection } from "sveltefire";
 
-  import * as Card from "$lib/components/ui/card/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
 
-  import WeekSelector from "$lib/components/WeekSelector.svelte";
   import { collection, query, where, orderBy } from "firebase/firestore";
 
   import AuthCheck from "$lib/components/auth/AuthCheck.svelte";

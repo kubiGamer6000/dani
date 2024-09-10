@@ -4,8 +4,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#e056fd",
-  "theme_color": "#e056fd",
+  "background_color": "#7c3aed",
+  "theme_color": "#7c3aed",
   "description": "The Dani's Catering app.",
   "orientation": "portrait",
   "icons": [

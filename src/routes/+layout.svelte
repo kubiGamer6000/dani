@@ -3,21 +3,22 @@
   import { ModeWatcher } from "mode-watcher";
   import { auth, db } from "$lib/firebase";
   import { FirebaseApp } from "sveltefire";
-  import { user } from "$lib/firebase";
-
-  import AuthCheck from "$lib/components/auth/AuthCheck.svelte";
-
   import { onMount } from "svelte";
+  import { browser } from "$app/environment";
 
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function (registrations) {
-      for (let registration of registrations) {
-        registration.unregister();
-      }
-    });
+  function unregisterServiceWorkers() {
+    if (browser && "serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
   }
 
   async function detectSWUpdate() {
+    if (!browser) return;
+
     const registration = await navigator.serviceWorker.ready;
 
     registration.addEventListener("updatefound", () => {
@@ -36,7 +37,8 @@
     });
   }
 
-  onMount(async () => {
+  onMount(() => {
+    unregisterServiceWorkers();
     detectSWUpdate();
   });
 </script>
