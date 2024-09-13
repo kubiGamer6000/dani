@@ -33,6 +33,11 @@ function initWebPush() {
   );
 }
 
+// Add a new error logging function
+function logError(message: string, error: any) {
+  console.error(`[ERROR] ${message}:`, error);
+}
+
 // Send a notification to a specific subscription
 async function sendNotification(
   subscription: PushSubscription,
@@ -46,6 +51,7 @@ async function sendNotification(
       body: res.body,
     };
   } catch (err) {
+    logError("Failed to send notification", err);
     return {
       ok: false,
       status: undefined,
@@ -56,17 +62,21 @@ async function sendNotification(
 
 // Delete a device if it has failed to receive notifications multiple times
 async function deleteIfExpired(deviceId: string) {
-  const q = adminDB
-    .collection("notif_log")
-    .where("device_id", "==", deviceId)
-    .where("success", "==", false)
-    .orderBy("created_at", "desc")
-    .limit(3);
-  const last3success = await q.get();
+  try {
+    const q = adminDB
+      .collection("notif_log")
+      .where("device_id", "==", deviceId)
+      .where("success", "==", false)
+      .orderBy("created_at", "desc")
+      .limit(3);
+    const last3success = await q.get();
 
-  if (last3success.size >= 3) {
-    const deviceRef = adminDB.collection("userDevices").doc(deviceId);
-    await deviceRef.delete();
+    if (last3success.size >= 3) {
+      const deviceRef = adminDB.collection("userDevices").doc(deviceId);
+      await deviceRef.delete();
+    }
+  } catch (err) {
+    logError(`Failed to delete expired device ${deviceId}`, err);
   }
 }
 
@@ -76,25 +86,36 @@ async function sendNotificationToDevices(
   payload: string
 ) {
   const notificationPromises = devices.map(async (device) => {
-    const res = await sendNotification(device.subscription, payload);
+    try {
+      const res = await sendNotification(device.subscription, payload);
 
-    // Log the notification attempt
-    await adminDB.collection("notif_log").add({
-      device_id: device.deviceId,
-      payload,
-      http_status_response: res?.status,
-      success: res.ok,
-      error_message: res.body,
-      created_at: Timestamp.now(),
-    });
+      // Log the notification attempt
+      await adminDB.collection("notif_log").add({
+        device_id: device.deviceId,
+        payload,
+        http_status_response: res?.status,
+        success: res.ok,
+        error_message: res.body,
+        created_at: Timestamp.now(),
+      });
 
-    // Check if the device needs to be deleted
-    if (res.status === 410 || !res.ok) {
-      await deleteIfExpired(device.deviceId);
+      // Check if the device needs to be deleted
+      if (res.status === 410 || !res.ok) {
+        await deleteIfExpired(device.deviceId);
+      }
+    } catch (err) {
+      logError(
+        `Failed to process notification for device ${device.deviceId}`,
+        err
+      );
     }
   });
 
-  await Promise.all(notificationPromises);
+  try {
+    await Promise.all(notificationPromises);
+  } catch (err) {
+    logError("Failed to send notifications to devices", err);
+  }
 }
 
 // Add or update a user's device
@@ -102,25 +123,29 @@ export async function addUserDevice(
   userId: string,
   subscription: PushSubscription
 ) {
-  const userDevicesRef = adminDB
-    .collection("users")
-    .doc(userId)
-    .collection("devices");
-  const q = userDevicesRef.where("endpoint", "==", subscription.endpoint);
-  const sameDevice = await q.get();
+  try {
+    const userDevicesRef = adminDB
+      .collection("users")
+      .doc(userId)
+      .collection("devices");
+    const q = userDevicesRef.where("endpoint", "==", subscription.endpoint);
+    const sameDevice = await q.get();
 
-  if (!sameDevice.empty) {
-    await sameDevice.docs[0].ref.update({ subscription });
-    return;
+    if (!sameDevice.empty) {
+      await sameDevice.docs[0].ref.update({ subscription });
+      return;
+    }
+
+    const deviceData: UserDevice = {
+      userId: userId,
+      endpoint: subscription.endpoint,
+      subscription: subscription,
+    };
+
+    await userDevicesRef.add(deviceData);
+  } catch (err) {
+    logError(`Failed to add user device for user ${userId}`, err);
   }
-
-  const deviceData: UserDevice = {
-    userId: userId,
-    endpoint: subscription.endpoint,
-    subscription: subscription,
-  };
-
-  await userDevicesRef.add(deviceData);
 }
 
 // TODO: Implement addUserToChannel function
@@ -130,12 +155,18 @@ export async function addUserDevice(
 
 // Send a notification to a specific user
 export async function notifUser(userId: string, payload: string) {
-  const userRef = adminDB.collection("users").doc(userId);
-  const userDoc = await userRef.get();
+  try {
+    const userRef = adminDB.collection("users").doc(userId);
+    const userDoc = await userRef.get();
 
-  if (userDoc.exists) {
-    const devices = await mapUserDevicesWithIds(userId);
-    await sendNotificationToDevices(devices, payload);
+    if (userDoc.exists) {
+      const devices = await mapUserDevicesWithIds(userId);
+      await sendNotificationToDevices(devices, payload);
+    } else {
+      console.warn(`User ${userId} not found for notification`);
+    }
+  } catch (err) {
+    logError(`Failed to notify user ${userId}`, err);
   }
 }
 
@@ -146,13 +177,21 @@ interface UserDeviceWithId extends UserDevice {
 
 // Send a notification to all users
 export async function notifyAllUsers(payload: string) {
-  const usersRef = adminDB.collection("users");
-  const userDocs = await usersRef.get();
+  try {
+    const usersRef = adminDB.collection("users");
+    const userDocs = await usersRef.get();
 
-  for (const userDoc of userDocs.docs) {
-    const userId = userDoc.id;
-    const devices = await mapUserDevicesWithIds(userId);
-    await sendNotificationToDevices(devices, payload);
+    for (const userDoc of userDocs.docs) {
+      const userId = userDoc.id;
+      try {
+        const devices = await mapUserDevicesWithIds(userId);
+        await sendNotificationToDevices(devices, payload);
+      } catch (err) {
+        logError(`Failed to notify user ${userId}`, err);
+      }
+    }
+  } catch (err) {
+    logError("Failed to notify all users", err);
   }
 }
 
