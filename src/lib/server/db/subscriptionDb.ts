@@ -61,7 +61,7 @@ async function sendNotification(
 }
 
 // Delete a device if it has failed to receive notifications multiple times
-async function deleteIfExpired(deviceId: string) {
+async function deleteIfExpired(userId: string, deviceId: string) {
   try {
     const q = adminDB
       .collection("notif_log")
@@ -69,14 +69,27 @@ async function deleteIfExpired(deviceId: string) {
       .where("success", "==", false)
       .orderBy("created_at", "desc")
       .limit(3);
-    const last3success = await q.get();
+    const last3failures = await q.get();
 
-    if (last3success.size >= 3) {
-      const deviceRef = adminDB.collection("userDevices").doc(deviceId);
-      await deviceRef.delete();
+    if (last3failures.size >= 3) {
+      const deviceRef = adminDB
+        .collection("users")
+        .doc(userId)
+        .collection("devices")
+        .doc(deviceId);
+      const deviceDoc = await deviceRef.get();
+      if (deviceDoc.exists) {
+        await deviceRef.delete();
+        console.log(`Deleted expired device ${deviceId} for user ${userId}`);
+      } else {
+        console.log(`Device ${deviceId} for user ${userId} already deleted`);
+      }
     }
   } catch (err) {
-    logError(`Failed to delete expired device ${deviceId}`, err);
+    logError(
+      `Failed to delete expired device ${deviceId} for user ${userId}`,
+      err
+    );
   }
 }
 
@@ -93,7 +106,7 @@ async function sendNotificationToDevices(
       await adminDB.collection("notif_log").add({
         device_id: device.deviceId,
         payload,
-        http_status_response: res?.status,
+        http_status_response: res?.status ?? null, // Use null if status is undefined
         success: res.ok,
         error_message: res.body,
         created_at: Timestamp.now(),
@@ -101,13 +114,23 @@ async function sendNotificationToDevices(
 
       // Check if the device needs to be deleted
       if (res.status === 410 || !res.ok) {
-        await deleteIfExpired(device.deviceId);
+        await deleteIfExpired(device.userId, device.deviceId);
       }
-    } catch (err) {
+    } catch (err: any) {
       logError(
         `Failed to process notification for device ${device.deviceId}`,
         err
       );
+
+      // Log the failed attempt
+      await adminDB.collection("notif_log").add({
+        device_id: device.deviceId,
+        payload,
+        http_status_response: null,
+        success: false,
+        error_message: err.message,
+        created_at: Timestamp.now(),
+      });
     }
   });
 
@@ -128,23 +151,31 @@ export async function addUserDevice(
       .collection("users")
       .doc(userId)
       .collection("devices");
-    const q = userDevicesRef.where("endpoint", "==", subscription.endpoint);
-    const sameDevice = await q.get();
 
-    if (!sameDevice.empty) {
-      await sameDevice.docs[0].ref.update({ subscription });
-      return;
-    }
+    // Use a transaction to ensure atomicity
+    await adminDB.runTransaction(async (transaction) => {
+      const q = userDevicesRef.where("endpoint", "==", subscription.endpoint);
+      const sameDeviceSnapshot = await transaction.get(q);
 
-    const deviceData: UserDevice = {
-      userId: userId,
-      endpoint: subscription.endpoint,
-      subscription: subscription,
-    };
+      if (!sameDeviceSnapshot.empty) {
+        // Update existing device
+        const existingDeviceDoc = sameDeviceSnapshot.docs[0];
+        transaction.update(existingDeviceDoc.ref, { subscription });
+      } else {
+        // Add new device
+        const deviceData: UserDevice = {
+          userId: userId,
+          endpoint: subscription.endpoint,
+          subscription: subscription,
+        };
+        transaction.set(userDevicesRef.doc(), deviceData);
+      }
+    });
 
-    await userDevicesRef.add(deviceData);
+    console.log(`Device successfully added/updated for user ${userId}`);
   } catch (err) {
     logError(`Failed to add user device for user ${userId}`, err);
+    throw err; // Rethrow to handle in the calling function
   }
 }
 

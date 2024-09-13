@@ -88,6 +88,9 @@
     if ("serviceWorker" in navigator) {
       try {
         const res = await fetch("/api/vapidPubKey");
+        if (!res.ok) {
+          throw new Error(`Failed to fetch VAPID key: ${res.statusText}`);
+        }
         const { data } = await res.json();
         log("Received VAPID public key", data);
 
@@ -98,12 +101,15 @@
         });
         isSubscribed = true;
         log("Push subscription created", subscription);
-        sendSubscriptonToServer(subscription);
-      } catch (error) {
+        await sendSubscriptonToServer(subscription);
+      } catch (error: any) {
         log("Error subscribing user to push notifications", error);
+        // Display an error message to the user
+        alert(`Failed to subscribe: ${error.message}`);
       }
     } else {
       log("Service worker not supported");
+      alert("Push notifications are not supported in your browser.");
     }
   }
 
